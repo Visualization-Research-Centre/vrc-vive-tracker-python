@@ -40,7 +40,6 @@ With the virtual environment activated, install the required dependencies:
 ./scripts/install_dependencies.sh
 ``` 
 
-### Running the script
-
+### Running scripts
 
 
