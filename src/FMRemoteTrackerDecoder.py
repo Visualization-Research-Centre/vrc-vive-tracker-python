@@ -3,19 +3,11 @@ from threading import Lock
 
 class FMRemoteTrackerDecoder:
     def __init__(self):
-        self.ignore_tracking_reference = True
-        self.offset_local_angle = [0, 0, 0]
-        self.offset_global_position = [0, 0, 0]
-        self.offset_global_angle = [0, 0, 0]
+        self.ignore_tracking_reference = True 
         self.vr_tracker_devices = []
-        self.tracker_visualisers = []
-        self.ignored_vive_tracker_names = []
-        self.prefab_visualisers = []
-        self.detected_visualisers = []
-        self.on_register_tracker_event = []  # Placeholder for UnityEvent
+        self._ignored_vive_tracker_names = []
         self.label = 2222
         self.show_log = True
-        self.prefab_index = 0
         self.current_timestamp = 0
         self._initialised = 0
         self.initialised_lock = Lock()
@@ -26,22 +18,7 @@ class FMRemoteTrackerDecoder:
 
     @ignore_tracking_reference.setter
     def ignore_tracking_reference(self, value):
-        self._ignore_tracking_reference = value
-
-    def set_offset_local_angle(self, input_value):
-        self.offset_local_angle = input_value
-
-    def set_offset_global_position(self, input_value):
-        self.offset_global_position = input_value
-
-    def set_offset_global_angle(self, input_value):
-        self.offset_global_angle = input_value
-
-    def update_all_visualisers_offsets(self):
-        for visualiser in self.tracker_visualisers:
-            visualiser.set_offset_global_position(self.offset_global_position)
-            visualiser.set_offset_local_angle(self.offset_local_angle)
-            visualiser.set_offset_global_angle(self.offset_global_angle)
+        self._ignore_tracking_reference = bool(value)
 
     @property
     def vr_tracker_devices_raw(self):
@@ -49,11 +26,14 @@ class FMRemoteTrackerDecoder:
 
     @property
     def vr_tracker_devices(self):
-        return [device for device in self.vr_tracker_devices if device.name.lower() not in self.ignored_vive_tracker_names]
+        return [device for device in self.vr_tracker_devices if device['name'].lower() not in self.ignored_vive_tracker_names]
 
-    @property
-    def tracker_visualisers(self):
-        return self.tracker_visualisers
+    @vr_tracker_devices.setter
+    def vr_tracker_devices(self, value):
+        if value is not None:
+            self._vr_tracker_devices = value
+        else:
+            self._vr_tracker_devices = []
 
     @property
     def ignored_vive_tracker_names(self):
@@ -67,22 +47,15 @@ class FMRemoteTrackerDecoder:
         if input_tracker_name.lower() not in self.ignored_vive_tracker_names:
             self.ignored_vive_tracker_names.append(input_tracker_name.lower())
 
-    def action_remove_all_offset(self):
-        self.offset_local_angle = [0, 0, 0]
-        self.offset_global_position = [0, 0, 0]
-        self.offset_global_angle = [0, 0, 0]
+    @property
+    def initialised(self):
+        with self.initialised_lock:
+            return self._initialised == 1
 
-    def action_register_fm_remote_tracker_visualiser(self, input_fm_remote_tracker_visualiser):
-        input_fm_remote_tracker_visualiser.set_offset_local_angle(self.offset_local_angle)
-        input_fm_remote_tracker_visualiser.set_offset_global_position(self.offset_global_position)
-        input_fm_remote_tracker_visualiser.set_offset_global_angle(self.offset_global_angle)
-
-        if input_fm_remote_tracker_visualiser not in self.tracker_visualisers:
-            self.tracker_visualisers.append(input_fm_remote_tracker_visualiser)
-
-    def action_unregister_fm_remote_tracker_visualiser(self, input_fm_remote_tracker_visualiser):
-        if input_fm_remote_tracker_visualiser in self.tracker_visualisers:
-            self.tracker_visualisers.remove(input_fm_remote_tracker_visualiser)
+    @initialised.setter
+    def initialised(self, value):
+        with self.initialised_lock:
+            self._initialised = bool(value)
 
     def action_process_data(self, byte_data):
         if not self.enabled:
@@ -156,10 +129,6 @@ class FMRemoteTrackerDecoder:
                 else:
                     index += 40
 
-                for visualiser in self.tracker_visualisers:
-                    if visualiser.tracker_name == vr_tracker_device['name']:
-                        visualiser.action_process_data(vr_tracker_device)
-
                 can_add_tracker_device = True
                 if self.ignore_tracking_reference:
                     if vr_tracker_device['device_class'] == 4:  # TrackingReference
@@ -170,62 +139,12 @@ class FMRemoteTrackerDecoder:
 
         self.vr_tracker_devices = vr_tracker_devices
 
-        if self.prefab_visualisers:
-            if not self.prefab_visualisers:
-                if self.show_log:
-                    print("[FMETP] missing tracker prefab")
-            else:
-                while len(self.detected_visualisers) < len(self.vr_tracker_devices):
-                    visualiser = self.prefab_visualisers[self.prefab_index]  # Placeholder for Instantiate
-                    self.prefab_index += 1
-                    if self.prefab_index >= len(self.prefab_visualisers):
-                        self.prefab_index = 0
-
-                    tracker_device = self.vr_tracker_devices[len(self.detected_visualisers)]
-                    visualiser.name = "visualiser_" + tracker_device['name']
-                    visualiser.active = True  # Placeholder for SetActive
-
-                    visualiser.tracker_name = tracker_device['name']
-                    visualiser.tracker_id = len(self.detected_visualisers)
-
-                    self.detected_visualisers.append(visualiser)
-
-                    self.on_register_tracker_event.append(tracker_device['name'])  # Placeholder for Invoke
-
-                    if self.ignored_vive_tracker_names:
-                        visualiser_name = tracker_device['name'].lower()
-                        if visualiser_name in self.ignored_vive_tracker_names:
-                            if self.show_log:
-                                print("[FMETP] Ignore this tracker: " + visualiser_name)
-                            visualiser.active = False  # Placeholder for SetActive
-
-    @property
-    def initialised(self):
-        with self.initialised_lock:
-            return self._initialised == 1
-
-    @initialised.setter
-    def initialised(self, value):
-        with self.initialised_lock:
-            self._initialised = 1 if value else 0
-
     def start_all(self):
         if self.initialised:
             return
         self.initialised = True
 
-        if self.prefab_visualisers:
-            for visualiser in self.prefab_visualisers:
-                visualiser.active = False  # Placeholder for SetActive
-
-        tracker_visualisers = []  # Placeholder for FindObjectsOfType
-        if tracker_visualisers:
-            for visualiser in tracker_visualisers:
-                self.action_register_fm_remote_tracker_visualiser(visualiser)
-
     def stop_all(self):
-        self.tracker_visualisers.clear()
-        self.tracker_visualisers = []
         self.initialised = False
 
     def start(self):
