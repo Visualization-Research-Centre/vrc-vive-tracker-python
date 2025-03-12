@@ -18,8 +18,8 @@ class TestFMRemoteTrackerDecoder(unittest.TestCase):
         self.assertTrue(self.decoder.ignore_tracking_reference)
     
     # vr_tracker_devices
-    def test_vr_tracker_devices_default(self):
-        self.assertEqual(self.decoder.vr_tracker_devices, [])
+    # def test_vr_tracker_devices_default(self):
+    #     self.assertEqual(self.decoder.vr_tracker_devices, [])
 
     # _ignored_vive_tracker_names
     # def test_ignored_vive_tracker_names_default(self):

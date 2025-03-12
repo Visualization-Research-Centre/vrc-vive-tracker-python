@@ -7,7 +7,7 @@ class FMRemoteTrackerDecoder:
         self.vr_tracker_devices = []
         self._ignored_vive_tracker_names = []
         self.label = 2222
-        self.show_log = True
+        # self.show_log = True
         self.current_timestamp = 0
         self._initialised = 0
         self.initialised_lock = Lock()
