@@ -1,4 +1,6 @@
+import os
 import time
+import struct
 from threading import Lock
 
 class FMRemoteTrackerDecoder:
@@ -7,7 +9,6 @@ class FMRemoteTrackerDecoder:
         self.vr_tracker_devices = []
         self._ignored_vive_tracker_names = []
         self.label = 2222
-        # self.show_log = True
         self.current_timestamp = 0
         self._initialised = 0
         self.initialised_lock = Lock()
@@ -58,11 +59,10 @@ class FMRemoteTrackerDecoder:
             self._initialised = bool(value)
 
     def action_process_data(self, byte_data):
-        if not self.enabled:
-            return
         if len(byte_data) <= 2:
             return
 
+        # print how many bytes we have
         label = int.from_bytes(byte_data[:2], 'little')
         if label != self.label:
             return
@@ -81,16 +81,16 @@ class FMRemoteTrackerDecoder:
                 is_tracked = byte_data[index + 11] == 1
 
                 position = [
-                    float.from_bytes(byte_data[index + 12:index + 16], 'little'),
-                    float.from_bytes(byte_data[index + 16:index + 20], 'little'),
-                    float.from_bytes(byte_data[index + 20:index + 24], 'little')
+                    struct.unpack('<f', byte_data[index + 12:index + 16])[0],
+                    struct.unpack('<f', byte_data[index + 16:index + 20])[0],
+                    struct.unpack('<f', byte_data[index + 20:index + 24])[0]
                 ]
-
+                print(f"Position: {position}")
                 rotation = [
-                    float.from_bytes(byte_data[index + 24:index + 28], 'little'),
-                    float.from_bytes(byte_data[index + 28:index + 32], 'little'),
-                    float.from_bytes(byte_data[index + 32:index + 36], 'little'),
-                    float.from_bytes(byte_data[index + 36:index + 40], 'little')
+                    struct.unpack('<f', byte_data[index + 24:index + 28])[0],
+                    struct.unpack('<f', byte_data[index + 28:index + 32])[0],
+                    struct.unpack('<f', byte_data[index + 32:index + 36])[0],
+                    struct.unpack('<f', byte_data[index + 36:index + 40])[0]
                 ]
 
                 vr_tracker_device = {
@@ -106,24 +106,24 @@ class FMRemoteTrackerDecoder:
                 if device_class == 2:
                     vr_tracker_device['ul_button_pressed'] = int.from_bytes(byte_data[index + 40:index + 48], 'little')
                     vr_tracker_device['r_axis0'] = [
-                        float.from_bytes(byte_data[index + 48:index + 52], 'little'),
-                        float.from_bytes(byte_data[index + 52:index + 56], 'little')
+                        struct.unpack('<f', byte_data[index + 48:index + 52])[0],
+                        struct.unpack('<f', byte_data[index + 52:index + 56])[0]
                     ]
                     vr_tracker_device['r_axis1'] = [
-                        float.from_bytes(byte_data[index + 56:index + 60], 'little'),
-                        float.from_bytes(byte_data[index + 60:index + 64], 'little')
+                        struct.unpack('<f', byte_data[index + 56:index + 60])[0],
+                        struct.unpack('<f', byte_data[index + 60:index + 64])[0]
                     ]
                     vr_tracker_device['r_axis2'] = [
-                        float.from_bytes(byte_data[index + 64:index + 68], 'little'),
-                        float.from_bytes(byte_data[index + 68:index + 72], 'little')
+                        struct.unpack('<f', byte_data[index + 64:index + 68])[0],
+                        struct.unpack('<f', byte_data[index + 68:index + 72])[0]
                     ]
                     vr_tracker_device['r_axis3'] = [
-                        float.from_bytes(byte_data[index + 72:index + 76], 'little'),
-                        float.from_bytes(byte_data[index + 76:index + 80], 'little')
+                        struct.unpack('<f', byte_data[index + 72:index + 76])[0],
+                        struct.unpack('<f', byte_data[index + 76:index + 80])[0]
                     ]
                     vr_tracker_device['r_axis4'] = [
-                        float.from_bytes(byte_data[index + 80:index + 84], 'little'),
-                        float.from_bytes(byte_data[index + 84:index + 88], 'little')
+                        struct.unpack('<f', byte_data[index + 80:index + 84])[0],
+                        struct.unpack('<f', byte_data[index + 84:index + 88])[0]
                     ]
                     index += 88
                 else:
@@ -155,3 +155,25 @@ class FMRemoteTrackerDecoder:
 
     def on_disable(self):
         self.stop_all()
+
+    def read_recorded_data(self, file_path):
+        recorded_data = []
+        with open(file_path, 'r') as file:
+            for line in file:
+                timestamp_str, byte_data_str = line.strip().split(': ', 1)
+                timestamp = float(timestamp_str)
+                byte_data = eval(byte_data_str)  # Convert the byte string back to bytes
+                recorded_data.append((timestamp, byte_data))
+        return recorded_data
+
+if __name__ == "__main__":
+    decoder = FMRemoteTrackerDecoder()
+    project_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'recordings'))
+    file_path = project_dir + "/Untitled2.txt"
+    recorded_data = decoder.read_recorded_data(file_path)
+    for timestamp, byte_data in recorded_data:
+        print(f"Timestamp: {timestamp}, Byte Data: {byte_data}")
+    # decode the byte data
+    for timestamp, byte_data in recorded_data:
+        decoder.action_process_data(byte_data)
+        print(f"Timestamp: {timestamp}, VR Tracker Devices: {decoder.vr_tracker_devices}")
