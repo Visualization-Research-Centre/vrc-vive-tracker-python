@@ -1,6 +1,6 @@
 import socket
 
-def udp_broadcast_listener(port):
+def udp_broadcast_listener(file_path=None, port=2222):
     # Create a UDP socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     
@@ -11,11 +11,20 @@ def udp_broadcast_listener(port):
     sock.bind(('', port))
     
     print(f"Listening for UDP broadcast on port {port}...")
-    
-    while True:
-        # Receive data from the socket
-        data, addr = sock.recvfrom(1024)  # Buffer size is 1024 bytes
-        print(f"Received raw data: {data} from {addr}")
+
+    if file_path:
+        with open(file_path, 'a') as file:
+            while True:
+                # Receive data from the socket
+                data, addr = sock.recvfrom(1024)  # Buffer size is 1024 bytes
+                print(f"Received message: {data} from {addr}")
+                file.write(f"{data}\n")
+    else:
+        while True:
+            # Receive data from the socket
+            data, addr = sock.recvfrom(1024)  # Buffer size is 1024 bytes
+            print(f"Received message: {data} from {addr}")
+
 
 if __name__ == "__main__":
-    udp_broadcast_listener(2222)
+    udp_broadcast_listener()
