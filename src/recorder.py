@@ -41,7 +41,7 @@ class Recorder:
         self.connect_button.grid(row=1, column=0, padx=10, pady=10)
 
         # Disconnect Button
-        self.disconnect_button = tk.Button(root, text="Disconnected", command=self.disconnect)
+        self.disconnect_button = tk.Button(root, text="Disconnected", bg="grey", relief=tk.SUNKEN, command=self.disconnect)
         self.disconnect_button.grid(row=1, column=1, padx=10, pady=10)
         
         # Record Button and Entry
@@ -49,7 +49,7 @@ class Recorder:
         self.record_button.grid(row=2, column=0, padx=10, pady=10)
 
         self.record_entry = tk.Entry(root, textvariable=self.record_path, state='readonly')
-        self.record_entry.grid(row=2, column=1, padx=10, pady=10)
+        self.record_entry.grid(row=2, column=1, padx=20, pady=10)
 
         # Load Button and Entry
         self.load_button = tk.Button(root, text="Load", command=self.load)
@@ -79,7 +79,7 @@ class Recorder:
         self.listener_running = False
         if self.recording_thread and self.recording_thread.is_alive():
             self.recording_thread.join()
-        self.disconnect_button.config(text="Disconnected", bg="SystemButtonFace", relief=tk.RAISED)
+        self.disconnect_button.config(text="Disconnected", bg="grey", relief=tk.SUNKEN)
         self.connect_button.config(text="Connect", bg="SystemButtonFace", relief=tk.RAISED)
         self.record_button.config(text="Record", bg="SystemButtonFace", relief=tk.RAISED)
         # messagebox.showinfo("Info", "UDP listener stopped")
@@ -92,8 +92,9 @@ class Recorder:
             # Create the file to ensure it exists
             with open(self.file_path, 'w') as file:
                 file.write("")
+            self.record_entry.config(width=len(self.file_path))
             # Start recording
-            self.record_button.config(text="Recording", bg="green", relief=tk.SUNKEN)
+            self.record_button.config(text="Recording", bg="yellow", relief=tk.SUNKEN)
             if not self.listener_running:
                 self.connect()
             self.recording = True
