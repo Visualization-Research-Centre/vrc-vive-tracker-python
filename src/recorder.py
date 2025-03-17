@@ -22,7 +22,7 @@ class Recorder:
         self.file_path = None
         self.default_ip_listen = ''
         self.default_port_listen = 2222
-        self.default_ip_send = ''
+        self.default_ip_send = '127.0.0.1'
         self.default_port_send = 2223
 
         # IP Address Label and Entry for listening
