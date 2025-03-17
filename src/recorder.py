@@ -19,22 +19,24 @@ class Recorder:
         self.start_time = None
         self.listener_running = False
         self.file_path = None
-        self.default_ip = ''
-        self.default_port = 2222
+        self.default_ip_listen = ''
+        self.default_port_listen = 2222
+        self.default_ip_send = ''
+        self.default_port_send = 2223
 
-        # IP Address Label and Entry
-        self.ip_label = tk.Label(root, text="IP")
-        self.ip_label.grid(row=0, column=0, padx=10, pady=10, sticky='w')
-        self.ip_address = tk.StringVar(value=self.default_ip)
-        self.ip_entry = tk.Entry(root, textvariable=self.ip_address)
-        self.ip_entry.grid(row=0, column=1, padx=10, pady=10)
+        # IP Address Label and Entry for listening
+        self.listen_ip_label = tk.Label(root, text="IP")
+        self.listen_ip_label.grid(row=0, column=0, padx=10, pady=10, sticky='w')
+        self.listen_ip_address = tk.StringVar(value=self.default_ip_listen)
+        self.listen_ip_entry = tk.Entry(root, textvariable=self.listen_ip_address)
+        self.listen_ip_entry.grid(row=0, column=1, padx=10, pady=10)
 
         # Port Label and Entry
-        self.port_label = tk.Label(root, text="Port")
-        self.port_label.grid(row=0, column=2, padx=10, pady=10, sticky='w')
-        self.port = tk.IntVar(value=self.default_port)
-        self.port_entry = tk.Entry(root, textvariable=self.port)
-        self.port_entry.grid(row=0, column=3, padx=10, pady=10)
+        self.listen_port_label = tk.Label(root, text="Port")
+        self.listen_port_label.grid(row=0, column=2, padx=10, pady=10, sticky='w')
+        self.listen_port = tk.IntVar(value=self.default_port_listen)
+        self.listen_port_entry = tk.Entry(root, textvariable=self.listen_port)
+        self.listen_port_entry.grid(row=0, column=3, padx=10, pady=10)
 
         # Connect Button
         self.connect_button = tk.Button(root, text="Connect", command=self.connect)
@@ -61,6 +63,20 @@ class Recorder:
         # Play Button
         self.play_button = tk.Button(root, text="Play", command=self.play)
         self.play_button.grid(row=4, column=0, padx=10, pady=10)
+
+        # IP Address Label and Entry for sending
+        self.sending_ip_label = tk.Label(root, text="IP")
+        self.sending_ip_label.grid(row=4, column=1, padx=10, pady=10, sticky='w')
+        self.sending_ip_address = tk.StringVar(value=self.default_ip_send)
+        self.sending_ip_entry = tk.Entry(root, textvariable=self.sending_ip_address)
+        self.sending_ip_entry.grid(row=4, column=2, padx=10, pady=10)
+
+        # Port Label and Entry
+        self.sending_port_label = tk.Label(root, text="Port")
+        self.sending_port_label.grid(row=4, column=3, padx=10, pady=10, sticky='w')
+        self.sending_port = tk.IntVar(value=self.default_port_send)
+        self.sending_port_entry = tk.Entry(root, textvariable=self.sending_port)
+        self.sending_port_entry.grid(row=4, column=4, padx=10, pady=10)
 
         # Get the directory of the current script
         self.project_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'recordings'))
@@ -110,9 +126,21 @@ class Recorder:
 
     def play(self):
         if self.play_path.get():
-            messagebox.showinfo("Info", f"Playing: {self.play_path.get()}")
+            sending_ip = self.sending_ip_address.get()
+            sending_port = self.sending_port.get()
+            with open(self.play_path.get(), 'r') as file:
+                lines = file.readlines()
+                for line in lines:
+                    timestamp, data = line.strip().split(': ', 1)
+                    self.send_udp_message(sending_ip, sending_port, data)
+            # messagebox.showinfo("Info", f"Playing: {self.play_path.get()}")
         else:
             messagebox.showwarning("Warning", "No file loaded to play!")
+
+    def send_udp_message(self, ip, port, message):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.sendto(message.encode(), (ip, port))
+        print(f"Sent message: {message} to {ip}:{port}")
 
     def udp_broadcast_listener(self):
         # Create a UDP socket
@@ -121,12 +149,12 @@ class Recorder:
         # Allow the socket to reuse the address
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         
-        # Bind the socket to the IP and port
-        ip = self.ip_address.get()
-        port = self.port.get()
-        sock.bind((ip, port))
+        # Bind the socket to the IP and listen_port
+        ip = self.listen_ip_address.get()
+        listen_port = self.listen_port.get()
+        sock.bind((ip, listen_port))
         
-        print(f"Listening for UDP broadcast on {ip}:{port}...")
+        print(f"Listening for UDP broadcast on {ip}:{listen_port}...")
         
         while self.listener_running:
             # Receive data from the socket
