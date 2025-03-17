@@ -52,7 +52,7 @@ class Recorder:
         self.record_button.grid(row=2, column=0, padx=10, pady=10)
 
         self.record_entry = tk.Entry(root, textvariable=self.record_path, state='readonly')
-        self.record_entry.grid(row=2, column=1, padx=20, pady=10)
+        self.record_entry.grid(row=2, column=1, padx=10, pady=10)
 
         # Load Button and Entry
         self.load_button = tk.Button(root, text="Load", command=self.load)
@@ -127,6 +127,7 @@ class Recorder:
         if file_path:
             self.load_path.set(file_path)
             self.play_path.set(file_path)  # Set the play path to the loaded file
+            self.load_entry.config(width=len(file_path))
             # messagebox.showinfo("Info", f"Loaded file: {file_path}")
 
     def start_playing(self):
