@@ -146,21 +146,29 @@ class Recorder:
     def play(self):
         sending_ip = self.sending_ip_address.get()
         sending_port = self.sending_port.get()
+        last_timestamp = 0
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         while self.playing:
             with open(self.play_path.get(), 'r') as file:
                 lines = file.readlines()
+                start_time = time.time()
                 for line in lines:
                     if not self.playing:
                         break
                     timestamp, data = line.strip().split(': ', 1)
-                    self.send_udp_message(sending_ip, sending_port, data)
-                    time.sleep(0.1)  # Add a small delay to simulate real-time sending
-            # messagebox.showinfo("Info", f"Playing: {self.play_path.get()}")
+                    timestamp = float(timestamp)
+                    self.send_udp_message(sending_ip, sending_port, data, sock)
+                    current_time = time.time() - start_time
+                    time_diff = timestamp - current_time
+                    if time_diff > 0.000001:
+                        time.sleep(time_diff)  # Add a small delay to simulate real-time sending
+                    # print(timestamp - last_timestamp)
+                    last_timestamp = timestamp
+        print('Done!')
 
-    def send_udp_message(self, ip, port, message):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.sendto(message.encode(), (ip, port))
-        print(f"Sent message: {message} to {ip}:{port}")
+    def send_udp_message(self, ip, port, message, socket):
+        socket.sendto(message.encode(), (ip, port))
+        # print(f"Sent message: {message} to {ip}:{port}")
 
     def udp_broadcast_listener(self):
         # Create a UDP socket
@@ -176,14 +184,18 @@ class Recorder:
         
         print(f"Listening for UDP broadcast on {ip}:{listen_port}...")
         
+        dat = []
         while self.listener_running:
             # Receive data from the socket
             data, addr = sock.recvfrom(1024)  # Buffer size is 1024 bytes
             elapsed_time = time.time() - self.start_time if self.start_time else 0
-            print(f"elapsed_time: {elapsed_time:.4f}, received data: {data} from {addr}")
-            if self.recording and self.file_path:
-                with open(self.file_path, 'a') as file:
-                    file.write(f"{elapsed_time:.4f}: {data}\n")
+            # print(f"elapsed_time: {elapsed_time:.4f}, received data: {data} from {addr}")
+            dat.append( (elapsed_time, data) )
+
+        if self.file_path:
+            with open(self.file_path, 'w') as file:
+                for item in dat:
+                    file.write(f"{item[0]:.4f}: {item[1]}\n")
 
 if __name__ == "__main__":
     root = tk.Tk()
