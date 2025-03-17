@@ -22,15 +22,19 @@ class Recorder:
         self.default_ip = ''
         self.default_port = 2222
 
-        # IP Address Entry
+        # IP Address Label and Entry
+        self.ip_label = tk.Label(root, text="IP")
+        self.ip_label.grid(row=0, column=0, padx=10, pady=10, sticky='w')
         self.ip_address = tk.StringVar(value=self.default_ip)
         self.ip_entry = tk.Entry(root, textvariable=self.ip_address)
-        self.ip_entry.grid(row=0, column=0, padx=10, pady=10)
+        self.ip_entry.grid(row=0, column=1, padx=10, pady=10)
 
-        # Port Entry
+        # Port Label and Entry
+        self.port_label = tk.Label(root, text="Port")
+        self.port_label.grid(row=0, column=2, padx=10, pady=10, sticky='w')
         self.port = tk.IntVar(value=self.default_port)
         self.port_entry = tk.Entry(root, textvariable=self.port)
-        self.port_entry.grid(row=0, column=1, padx=10, pady=10)
+        self.port_entry.grid(row=0, column=3, padx=10, pady=10)
 
         # Connect Button
         self.connect_button = tk.Button(root, text="Connect", command=self.connect)
