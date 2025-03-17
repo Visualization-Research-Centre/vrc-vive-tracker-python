@@ -77,6 +77,7 @@ class Recorder:
             self.recording_thread.join()
         self.disconnect_button.config(text="Disconnected", bg="SystemButtonFace", relief=tk.RAISED)
         self.connect_button.config(text="Connect", bg="SystemButtonFace", relief=tk.RAISED)
+        self.record_button.config(text="Record", bg="SystemButtonFace", relief=tk.RAISED)
         # messagebox.showinfo("Info", "UDP listener stopped")
 
     def record(self):
@@ -84,7 +85,6 @@ class Recorder:
         if self.file_path:
             self.record_path.set(self.file_path)
             self.play_path.set(self.file_path)  # Set the play path to the recorded file
-
             # Create the file to ensure it exists
             with open(self.file_path, 'w') as file:
                 file.write("")
