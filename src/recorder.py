@@ -18,6 +18,7 @@ class Recorder:
         self.recording_thread = None
         self.start_time = None
         self.listener_running = False
+        self.playing = False
         self.file_path = None
         self.default_ip_listen = ''
         self.default_port_listen = 2222
@@ -61,22 +62,26 @@ class Recorder:
         self.load_entry.grid(row=3, column=1, padx=10, pady=10)
 
         # Play Button
-        self.play_button = tk.Button(root, text="Play", command=self.play)
+        self.play_button = tk.Button(root, text="Play", command=self.start_playing)
         self.play_button.grid(row=4, column=0, padx=10, pady=10)
+
+        # Stop Play Button
+        self.stop_play_button = tk.Button(root, text="Stop Play", command=self.stop_playing)
+        self.stop_play_button.grid(row=4, column=1, padx=10, pady=10)
 
         # IP Address Label and Entry for sending
         self.sending_ip_label = tk.Label(root, text="IP")
-        self.sending_ip_label.grid(row=4, column=1, padx=10, pady=10, sticky='w')
+        self.sending_ip_label.grid(row=4, column=2, padx=10, pady=10, sticky='w')
         self.sending_ip_address = tk.StringVar(value=self.default_ip_send)
         self.sending_ip_entry = tk.Entry(root, textvariable=self.sending_ip_address)
-        self.sending_ip_entry.grid(row=4, column=2, padx=10, pady=10)
+        self.sending_ip_entry.grid(row=4, column=3, padx=10, pady=10)
 
         # Port Label and Entry
         self.sending_port_label = tk.Label(root, text="Port")
-        self.sending_port_label.grid(row=4, column=3, padx=10, pady=10, sticky='w')
+        self.sending_port_label.grid(row=4, column=4, padx=10, pady=10, sticky='w')
         self.sending_port = tk.IntVar(value=self.default_port_send)
         self.sending_port_entry = tk.Entry(root, textvariable=self.sending_port)
-        self.sending_port_entry.grid(row=4, column=4, padx=10, pady=10)
+        self.sending_port_entry.grid(row=4, column=5, padx=10, pady=10)
 
         # Get the directory of the current script
         self.project_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'recordings'))
@@ -124,18 +129,32 @@ class Recorder:
             self.play_path.set(file_path)  # Set the play path to the loaded file
             # messagebox.showinfo("Info", f"Loaded file: {file_path}")
 
-    def play(self):
+    def start_playing(self):
         if self.play_path.get():
-            sending_ip = self.sending_ip_address.get()
-            sending_port = self.sending_port.get()
+            self.playing = True
+            self.play_thread = threading.Thread(target=self.play, daemon=True)
+            self.play_thread.start()
+        else:
+            messagebox.showwarning("Warning", "No file loaded to play!")
+
+    def stop_playing(self):
+        self.playing = False
+        if self.play_thread and self.play_thread.is_alive():
+            self.play_thread.join()
+
+    def play(self):
+        sending_ip = self.sending_ip_address.get()
+        sending_port = self.sending_port.get()
+        while self.playing:
             with open(self.play_path.get(), 'r') as file:
                 lines = file.readlines()
                 for line in lines:
+                    if not self.playing:
+                        break
                     timestamp, data = line.strip().split(': ', 1)
                     self.send_udp_message(sending_ip, sending_port, data)
+                    time.sleep(0.1)  # Add a small delay to simulate real-time sending
             # messagebox.showinfo("Info", f"Playing: {self.play_path.get()}")
-        else:
-            messagebox.showwarning("Warning", "No file loaded to play!")
 
     def send_udp_message(self, ip, port, message):
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
