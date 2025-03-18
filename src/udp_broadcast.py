@@ -26,5 +26,19 @@ def udp_broadcast_listener(file_path=None, port=2222):
             print(f"Received message: {data} from {addr}")
 
 
+def udp_broadcast_sender():
+    # Create a UDP socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    
+    # Set the socket to broadcast
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+    
+    message = b"Hello, World!"
+    while True:
+        # Send data to the socket
+        sock.sendto(message, ('', 2222))
+        print(f"Sent message: {message}")
+
 if __name__ == "__main__":
-    udp_broadcast_listener()
+    # udp_broadcast_listener()
+    udp_broadcast_sender()
