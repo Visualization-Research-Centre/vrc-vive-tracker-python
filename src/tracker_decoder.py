@@ -3,10 +3,10 @@ import time
 import struct
 from threading import Lock
 
-class FMRemoteTrackerDecoder:
+class TrackerDecoder:
     def __init__(self):
-        self.ignore_tracking_reference = True 
-        self.vr_tracker_devices = []
+        self._ignore_tracking_reference = True
+        self._vr_tracker_devices = []
         self._ignored_vive_tracker_names = []
         self.label = 2222
         self.current_timestamp = 0
@@ -23,11 +23,11 @@ class FMRemoteTrackerDecoder:
 
     @property
     def vr_tracker_devices_raw(self):
-        return self.vr_tracker_devices
+        return self._vr_tracker_devices
 
     @property
     def vr_tracker_devices(self):
-        return [device for device in self.vr_tracker_devices if device['name'].lower() not in self.ignored_vive_tracker_names]
+        return [device for device in self._vr_tracker_devices if device['name'].lower() not in self.ignored_vive_tracker_names]
 
     @vr_tracker_devices.setter
     def vr_tracker_devices(self, value):
@@ -56,18 +56,20 @@ class FMRemoteTrackerDecoder:
     @initialised.setter
     def initialised(self, value):
         with self.initialised_lock:
-            self._initialised = bool(value)
+            self._initialised = 1 if value else 0
 
     def action_process_data(self, byte_data):
         if len(byte_data) <= 2:
             return
 
-        # print how many bytes we have
+        # Print how many bytes we have
         label = int.from_bytes(byte_data[:2], 'little')
+        print(f"Label: {label}")
         if label != self.label:
             return
 
         vr_tracker_devices_count = byte_data[2]
+        print(f"VR Tracker Devices Count: {vr_tracker_devices_count}")
         vr_tracker_devices = []
         index = 3
 
@@ -85,14 +87,12 @@ class FMRemoteTrackerDecoder:
                     struct.unpack('<f', byte_data[index + 16:index + 20])[0],
                     struct.unpack('<f', byte_data[index + 20:index + 24])[0]
                 ]
-                print(f"Position: {position}")
                 rotation = [
                     struct.unpack('<f', byte_data[index + 24:index + 28])[0],
                     struct.unpack('<f', byte_data[index + 28:index + 32])[0],
                     struct.unpack('<f', byte_data[index + 32:index + 36])[0],
                     struct.unpack('<f', byte_data[index + 36:index + 40])[0]
                 ]
-
                 vr_tracker_device = {
                     'name': tracker_name,
                     'device_class': device_class,
@@ -129,6 +129,7 @@ class FMRemoteTrackerDecoder:
                 else:
                     index += 40
 
+                # check if the tracker device should be added
                 can_add_tracker_device = True
                 if self.ignore_tracking_reference:
                     if vr_tracker_device['device_class'] == 4:  # TrackingReference
@@ -137,7 +138,7 @@ class FMRemoteTrackerDecoder:
                 if can_add_tracker_device:
                     vr_tracker_devices.append(vr_tracker_device)
 
-        self.vr_tracker_devices = vr_tracker_devices
+        self._vr_tracker_devices = vr_tracker_devices
 
     def start_all(self):
         if self.initialised:
@@ -167,13 +168,12 @@ class FMRemoteTrackerDecoder:
         return recorded_data
 
 if __name__ == "__main__":
-    decoder = FMRemoteTrackerDecoder()
+    decoder = TrackerDecoder()
     project_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'recordings'))
     file_path = project_dir + "/Untitled2.txt"
     recorded_data = decoder.read_recorded_data(file_path)
-    for timestamp, byte_data in recorded_data:
-        print(f"Timestamp: {timestamp}, Byte Data: {byte_data}")
-    # decode the byte data
+    print(decoder.vr_tracker_devices_raw)
+    # Decode the byte data
     for timestamp, byte_data in recorded_data:
         decoder.action_process_data(byte_data)
-        print(f"Timestamp: {timestamp}, VR Tracker Devices: {decoder.vr_tracker_devices}")
+        # print(f"Timestamp: {timestamp}, VR Tracker Devices: {decoder.vr_tracker_devices}")
