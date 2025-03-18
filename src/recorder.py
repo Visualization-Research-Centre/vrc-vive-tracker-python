@@ -5,6 +5,10 @@ import os
 import socket
 import threading
 import time
+import logging
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class Recorder:
     def __init__(self, root):
@@ -88,12 +92,17 @@ class Recorder:
 
     def connect(self):
         if not self.listener_running:
-            self.listener_running = True
-            self.recording_thread = threading.Thread(target=self.udp_broadcast_listener, daemon=True)
-            self.recording_thread.start()
-            self.connect_button.config(text="Connected", bg="green", relief=tk.SUNKEN)
-            self.disconnect_button.config(text="Disconnect", bg="SystemButtonFace", relief=tk.RAISED)
-            # messagebox.showinfo("Info", "UDP listener started")
+            try:
+                self.listener_running = True
+                self.recording_thread = threading.Thread(target=self.udp_broadcast_listener, daemon=True)
+                self.recording_thread.start()
+                self.connect_button.config(text="Connected", bg="green", relief=tk.SUNKEN)
+                self.disconnect_button.config(text="Disconnect", bg="SystemButtonFace", relief=tk.RAISED)
+                logging.info("UDP listener started")
+            except Exception as e:
+                self.listener_running = False
+                messagebox.showerror("Error", f"Failed to start UDP listener: {e}")
+                logging.error(f"Failed to start UDP listener: {e}")
 
     def disconnect(self):
         self.recording = False
@@ -103,7 +112,7 @@ class Recorder:
         self.disconnect_button.config(text="Disconnected", bg="grey", relief=tk.SUNKEN)
         self.connect_button.config(text="Connect", bg="SystemButtonFace", relief=tk.RAISED)
         self.record_button.config(text="Record", bg="SystemButtonFace", relief=tk.RAISED)
-        # messagebox.showinfo("Info", "UDP listener stopped")
+        logging.info("UDP listener stopped")
 
     def record(self):
         self.file_path = filedialog.asksaveasfilename(initialdir=self.project_dir, defaultextension=".txt", filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
@@ -120,7 +129,7 @@ class Recorder:
                 self.connect()
             self.recording = True
             self.start_time = time.time()
-            # messagebox.showinfo("Info", f"Recording started at: {self.file_path}")
+            logging.info(f"Recording started at: {self.file_path}")
 
     def load(self):
         file_path = filedialog.askopenfilename(initialdir=self.project_dir, filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
@@ -128,47 +137,56 @@ class Recorder:
             self.load_path.set(file_path)
             self.play_path.set(file_path)  # Set the play path to the loaded file
             self.load_entry.config(width=len(file_path))
-            # messagebox.showinfo("Info", f"Loaded file: {file_path}")
+            logging.info(f"Loaded file: {file_path}")
 
     def start_playing(self):
         if self.play_path.get():
             self.playing = True
             self.play_thread = threading.Thread(target=self.play, daemon=True)
             self.play_thread.start()
+            logging.info("Started playing")
         else:
             messagebox.showwarning("Warning", "No file loaded to play!")
+            logging.warning("No file loaded to play!")
 
     def stop_playing(self):
         self.playing = False
         if self.play_thread and self.play_thread.is_alive():
             self.play_thread.join()
+        logging.info("Stopped playing")
 
     def play(self):
         sending_ip = self.sending_ip_address.get()
         sending_port = self.sending_port.get()
-        last_timestamp = 0
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         while self.playing:
-            with open(self.play_path.get(), 'r') as file:
-                lines = file.readlines()
-                start_time = time.time()
-                for line in lines:
-                    if not self.playing:
-                        break
-                    timestamp, data = line.strip().split(': ', 1)
-                    timestamp = float(timestamp)
-                    self.send_udp_message(sending_ip, sending_port, data, sock)
-                    current_time = time.time() - start_time
-                    time_diff = timestamp - current_time
-                    if time_diff > 0.000001:
-                        time.sleep(time_diff)  # Add a small delay to simulate real-time sending
-                    # print(timestamp - last_timestamp)
-                    last_timestamp = timestamp
-        print('Done!')
+            try:
+                with open(self.play_path.get(), 'r') as file:
+                    lines = file.readlines()
+                    start_time = time.time()
+                    for line in lines:
+                        if not self.playing:
+                            break
+                        timestamp, data = line.strip().split(': ', 1)
+                        timestamp = float(timestamp)
+                        self.send_udp_message(sending_ip, sending_port, data, sock)
+                        current_time = time.time() - start_time
+                        time_diff = timestamp - current_time
+                        if time_diff > 0.000001:
+                            time.sleep(time_diff)  # Add a small delay to simulate real-time sending
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to send UDP message: {e}")
+                logging.error(f"Failed to send UDP message: {e}")
+                break
+        logging.info('Done playing')
 
     def send_udp_message(self, ip, port, message, socket):
-        socket.sendto(message.encode(), (ip, port))
-        # print(f"Sent message: {message} to {ip}:{port}")
+        try:
+            socket.sendto(message.encode(), (ip, port))
+            # logging.info(f"Sent message: {message} to {ip}:{port}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to send UDP message: {e}")
+            logging.error(f"Failed to send UDP message: {e}")
 
     def udp_broadcast_listener(self):
         # Create a UDP socket
@@ -182,20 +200,20 @@ class Recorder:
         listen_port = self.listen_port.get()
         sock.bind((ip, listen_port))
         
-        print(f"Listening for UDP broadcast on {ip}:{listen_port}...")
+        logging.info(f"Listening for UDP broadcast on {ip}:{listen_port}...")
         
         dat = []
         while self.listener_running:
             # Receive data from the socket
             data, addr = sock.recvfrom(1024)  # Buffer size is 1024 bytes
             elapsed_time = time.time() - self.start_time if self.start_time else 0
-            # print(f"elapsed_time: {elapsed_time:.4f}, received data: {data} from {addr}")
             dat.append( (elapsed_time, data) )
 
         if self.file_path:
             with open(self.file_path, 'w') as file:
                 for item in dat:
                     file.write(f"{item[0]:.4f}: {item[1]}\n")
+            logging.info(f"Data saved to {self.file_path}")
 
 if __name__ == "__main__":
     root = tk.Tk()
