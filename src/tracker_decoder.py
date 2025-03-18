@@ -3,6 +3,16 @@ import time
 import struct
 from threading import Lock
 
+def read_recorded_data(file_path):
+    recorded_data = []
+    with open(file_path, 'r') as file:
+        for line in file:
+            timestamp_str, byte_data_str = line.strip().split(': ', 1)
+            timestamp = float(timestamp_str)
+            byte_data = eval(byte_data_str)
+            recorded_data.append((timestamp, byte_data))
+    return recorded_data
+
 class TrackerDecoder:
     def __init__(self):
         self._ignore_tracking_reference = True
@@ -62,7 +72,6 @@ class TrackerDecoder:
         if len(byte_data) <= 2:
             return
 
-        # Print how many bytes we have
         label = int.from_bytes(byte_data[:2], 'little')
         print(f"Label: {label}")
         if label != self.label:
@@ -148,32 +157,14 @@ class TrackerDecoder:
     def stop_all(self):
         self.initialised = False
 
-    def start(self):
-        self.start_all()
-
-    def on_enable(self):
-        self.start_all()
-
-    def on_disable(self):
-        self.stop_all()
-
-    def read_recorded_data(self, file_path):
-        recorded_data = []
-        with open(file_path, 'r') as file:
-            for line in file:
-                timestamp_str, byte_data_str = line.strip().split(': ', 1)
-                timestamp = float(timestamp_str)
-                byte_data = eval(byte_data_str)  # Convert the byte string back to bytes
-                recorded_data.append((timestamp, byte_data))
-        return recorded_data
-
 if __name__ == "__main__":
-    decoder = TrackerDecoder()
+    # path to the recorded data file
     project_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'recordings'))
     file_path = project_dir + "/Untitled2.txt"
-    recorded_data = decoder.read_recorded_data(file_path)
-    print(decoder.vr_tracker_devices_raw)
+    recorded_data = read_recorded_data(file_path)
+
+    decoder = TrackerDecoder()
     # Decode the byte data
     for timestamp, byte_data in recorded_data:
         decoder.action_process_data(byte_data)
-        # print(f"Timestamp: {timestamp}, VR Tracker Devices: {decoder.vr_tracker_devices}")
+        print(f"Timestamp: {timestamp}, VR Tracker Devices: {decoder.vr_tracker_devices}")
