@@ -6,6 +6,7 @@ import socket
 import threading
 import time
 import logging
+import struct
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -20,7 +21,7 @@ class Recorder:
         self.play_path = tk.StringVar()
         self.recording = False
         self.recording_thread = None
-        self.start_time = None
+        self.start_time = 0
         self.listener_running = False
         self.playing = False
         self.file_path = None
@@ -162,15 +163,15 @@ class Recorder:
         while self.playing:
             try:
                 with open(self.play_path.get(), 'r') as file:
-                    lines = file.readlines()
-                    start_time = time.time()
-                    for line in lines:
-                        if not self.playing:
+                    while True:
+                        line = file.readline()
+                        if not line:
                             break
-                        timestamp, data = line.strip().split(': ', 1)
-                        timestamp = float(timestamp)
+                        timestamp_str, data_str = line.strip().split(':', 1)
+                        timestamp = struct.unpack('<f', bytes.fromhex(timestamp_str))[0]
+                        data = bytes.fromhex(data_str)
                         self.send_udp_message(sending_ip, sending_port, data, sock)
-                        current_time = time.time() - start_time
+                        current_time = time.time() - self.start_time
                         time_diff = timestamp - current_time
                         if time_diff > 0.000001:
                             time.sleep(time_diff)  # Add a small delay to simulate real-time sending
@@ -182,7 +183,7 @@ class Recorder:
 
     def send_udp_message(self, ip, port, message, socket):
         try:
-            socket.sendto(message.encode(), (ip, port))
+            socket.sendto(message, (ip, port))
             # logging.info(f"Sent message: {message} to {ip}:{port}")
         except Exception as e:
             messagebox.showerror("Error", f"Failed to send UDP message: {e}")
@@ -207,12 +208,20 @@ class Recorder:
             # Receive data from the socket
             data, addr = sock.recvfrom(1024)  # Buffer size is 1024 bytes
             elapsed_time = time.time() - self.start_time if self.start_time else 0
-            dat.append( (elapsed_time, data) )
+            elapsed_time_bytes = struct.pack('<f', elapsed_time)  # Convert timestamp to bytes
+            data = elapsed_time_bytes + data  # Prepend timestamp to data
+            
+            dat.append(data)
+            # print(f"Received data: {data}")
 
         if self.file_path:
             with open(self.file_path, 'w') as file:
                 for item in dat:
-                    file.write(f"{item[0]:.4f}: {item[1]}\n")
+                    timestamp_bytes = item[:4]
+                    data_bytes = item[4:]
+                    timestamp_str = timestamp_bytes.hex()
+                    data_str = data_bytes.hex()
+                    file.write(f"{timestamp_str}:{data_str}\n")
             logging.info(f"Data saved to {self.file_path}")
 
 if __name__ == "__main__":
