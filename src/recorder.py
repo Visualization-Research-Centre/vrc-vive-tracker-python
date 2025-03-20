@@ -201,18 +201,25 @@ class Recorder:
         listen_port = self.listen_port.get()
         sock.bind((ip, listen_port))
         
+        # Set a timeout for the socket
+        sock.settimeout(5.0)  # Timeout after 5 seconds of inactivity
+        
         logging.info(f"Listening for UDP broadcast on {ip}:{listen_port}...")
         
         dat = []
         while self.listener_running:
-            # Receive data from the socket
-            data, addr = sock.recvfrom(1024)  # Buffer size is 1024 bytes
-            elapsed_time = time.time() - self.start_time if self.start_time else 0
-            elapsed_time_bytes = struct.pack('<f', elapsed_time)  # Convert timestamp to bytes
-            data = elapsed_time_bytes + data  # Prepend timestamp to data
-            
-            dat.append(data)
-            # print(f"Received data: {data}")
+            try:
+                # Receive data from the socket
+                data, addr = sock.recvfrom(1024)  # Buffer size is 1024 bytes
+                elapsed_time = time.time() - self.start_time if self.start_time else 0
+                elapsed_time_bytes = struct.pack('<f', elapsed_time)  # Convert timestamp to bytes
+                data = elapsed_time_bytes + data  # Prepend timestamp to data
+                
+                dat.append(data)
+                # print(f"Received data: {data}")
+            except socket.timeout:
+                logging.warning("UDP listener timed out")
+                continue
 
         if self.file_path:
             with open(self.file_path, 'w') as file:
