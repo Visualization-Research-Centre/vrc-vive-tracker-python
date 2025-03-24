@@ -146,6 +146,7 @@ class Recorder:
             self.play_thread = threading.Thread(target=self.play, daemon=True)
             self.play_thread.start()
             logging.info("Started playing")
+            self.play_button.config(text="Playing", bg="yellow", relief=tk.SUNKEN)
         else:
             messagebox.showwarning("Warning", "No file loaded to play!")
             logging.warning("No file loaded to play!")
@@ -155,6 +156,7 @@ class Recorder:
         if self.play_thread and self.play_thread.is_alive():
             self.play_thread.join()
         logging.info("Stopped playing")
+        self.play_button.config(text="Play", bg="SystemButtonFace", relief=tk.RAISED)
 
     def play(self):
         sending_ip = self.sending_ip_address.get()
