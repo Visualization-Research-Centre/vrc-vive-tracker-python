@@ -7,9 +7,9 @@ def read_recorded_data(file_path):
     recorded_data = []
     with open(file_path, 'r') as file:
         for line in file:
-            timestamp_str, byte_data_str = line.strip().split(': ', 1)
-            timestamp = float(timestamp_str)
-            byte_data = eval(byte_data_str)
+            timestamp_str, byte_data_str = line.strip().split(':', 1)
+            timestamp = struct.unpack('<f', bytes.fromhex(timestamp_str))[0]
+            byte_data = bytes.fromhex(byte_data_str)
             recorded_data.append((timestamp, byte_data))
     return recorded_data
 
@@ -73,12 +73,10 @@ class TrackerDecoder:
             return
 
         label = int.from_bytes(byte_data[:2], 'little')
-        print(f"Label: {label}")
         if label != self.label:
             return
 
         vr_tracker_devices_count = byte_data[2]
-        print(f"VR Tracker Devices Count: {vr_tracker_devices_count}")
         vr_tracker_devices = []
         index = 3
 
@@ -160,7 +158,7 @@ class TrackerDecoder:
 if __name__ == "__main__":
     # path to the recorded data file
     project_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'recordings'))
-    file_path = project_dir + "/Untitled2.txt"
+    file_path = project_dir + "/t1.txt"
     recorded_data = read_recorded_data(file_path)
 
     decoder = TrackerDecoder()
