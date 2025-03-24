@@ -3,16 +3,6 @@ import time
 import struct
 from threading import Lock
 
-def read_recorded_data(file_path):
-    recorded_data = []
-    with open(file_path, 'r') as file:
-        for line in file:
-            timestamp_str, byte_data_str = line.strip().split(':', 1)
-            timestamp = struct.unpack('<f', bytes.fromhex(timestamp_str))[0]
-            byte_data = bytes.fromhex(byte_data_str)
-            recorded_data.append((timestamp, byte_data))
-    return recorded_data
-
 class TrackerDecoder:
     def __init__(self):
         self._ignore_tracking_reference = True
@@ -154,6 +144,17 @@ class TrackerDecoder:
 
     def stop_all(self):
         self.initialised = False
+
+def read_recorded_data(file_path):
+    recorded_data = []
+    with open(file_path, 'r') as file:
+        for line in file:
+            timestamp_str, byte_data_str = line.strip().split(':', 1)
+            timestamp = struct.unpack('<f', bytes.fromhex(timestamp_str))[0]
+            byte_data = bytes.fromhex(byte_data_str)
+            recorded_data.append((timestamp, byte_data))
+    return recorded_data
+
 
 if __name__ == "__main__":
     # path to the recorded data file
