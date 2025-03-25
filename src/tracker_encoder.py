@@ -1,7 +1,4 @@
-import os
-import time
 import struct
-import numpy as np
 from threading import Lock
 
 class TrackerEncoder:
@@ -59,7 +56,7 @@ class TrackerEncoder:
         with self.initialised_lock:
             self._initialised = 1 if value else 0
 
-    def action_encode_data(self):
+    def action_process_data(self):
         byte_data = bytearray()
         byte_data.extend(self.label.to_bytes(2, 'little'))
         byte_data.append(len(self._vr_tracker_devices))
@@ -91,44 +88,3 @@ class TrackerEncoder:
 
     def stop_all(self):
         self.initialised = False
-
-if __name__ == "__main__":
-    from tracker_decoder import TrackerDecoder
-
-    # Example usage
-    encoder = TrackerEncoder()
-    encoder.vr_tracker_devices = [
-        {
-            'name': '2B9219E9',
-            'device_class': 3,
-            'battery': 1.0,
-            'status': True,
-            'is_tracked': True,
-            'position': [0.9944025874137878, 3.8844308853149414, 3.5970592498779297],
-            'rotation': [-0.8399912714958191, -0.5198175311088562, 0.13195396959781647, 0.08241691440343857]
-        },
-        {
-            'name': 'CB171C57',
-            'device_class': 3,
-            'battery': 0.78,
-            'status': True,
-            'is_tracked': True,
-            'position': [3.2700154781341553, 1.1561644077301025, -0.5717313885688782],
-            'rotation': [0.1816345900297165, -0.6273574829101562, -0.1807340532541275, -0.7353684306144714]
-        },
-        {
-            'name': '4CDFCB8B',
-            'device_class': 3,
-            'battery': 0.7,
-            'status': True,
-            'is_tracked': True,
-            'position': [0.053106654435396194, 0.7329368591308594, 0.061471227556467056],
-            'rotation': [-0.5108284950256348, -0.543066143989563, -0.43412545323371887, 0.5056366324424744]
-        }
-    ]
-    encoded_data = encoder.action_encode_data()
-    print('\nencoded_data:', encoded_data)
-
-    decoder = TrackerDecoder()
-    decoder.action_process_data(encoded_data)
-    print('\ndecoded_data:', decoder.vr_tracker_devices)
