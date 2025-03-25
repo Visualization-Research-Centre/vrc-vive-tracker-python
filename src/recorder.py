@@ -8,6 +8,9 @@ import time
 import logging
 import struct
 
+from tracker_encoder import TrackerEncoder
+from tracker_decoder import TrackerDecoder
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -88,6 +91,11 @@ class Recorder:
         self.sending_port = tk.IntVar(value=self.default_port_send)
         self.sending_port_entry = tk.Entry(root, textvariable=self.sending_port)
         self.sending_port_entry.grid(row=4, column=5, padx=10, pady=10)
+
+        # add a slider in the last row for integer values between 6-12 with default value 12
+        self.slider = tk.Scale(root, from_=6, to=12, orient='horizontal', length=200)
+        self.slider.set(12)
+        self.slider.grid(row=5, column=0, columnspan=6, padx=10, pady=10) 
 
         # Get the directory of the current script
         self.project_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'recordings'))
@@ -170,15 +178,41 @@ class Recorder:
                     while True:
                         line = file.readline()
                         if not line:
-                            break
+                            if file.tell() == 0:  # Check if the file is empty
+                                messagebox.showwarning("Warning", "The file is empty!")
+                                logging.warning("The file is empty!")
+                                self.playing = False
+                                self.play_button.config(text="Play", bg="SystemButtonFace", relief=tk.RAISED)
+                                break
+                            else:
+                                time.sleep(0.1)  # Timeout to prevent getting stuck
                         timestamp_str, data_str = line.strip().split(':', 1)
 
                         print(len(data_str))
 
-                        if len(data_str) == 566:
+                        if len(data_str) > 300:
+                            # get the current value of the slider
+                            slider_value = self.slider.get()
+                            # print(f"Slider value: {slider_value}")
 
+                            # get the timestamp and data from the line
                             timestamp = struct.unpack('<f', bytes.fromhex(timestamp_str))[0]
                             data = bytes.fromhex(data_str)
+
+                            print('data:', data)    
+
+                            # decode the data
+                            decoder = TrackerDecoder()
+                            decoder.action_process_data(data)
+                            decoded_data = decoder.vr_tracker_devices
+                            print(f"Decoded data: {decoded_data}")
+
+                            # encode the data
+                            encoder = TrackerEncoder()
+                            encoder.vr_tracker_devices = decoded_data
+                            encoded_data = encoder.action_process_data()
+                            print(f"Encoded data: {encoded_data}")
+
                             self.send_udp_message(sending_ip, sending_port, data, sock)
 
                             time_diff = timestamp - last_timestamp
@@ -238,9 +272,13 @@ class Recorder:
                 continue
 
         if self.file_path:
-            with open(self.file_path, 'wb') as file:
+            with open(self.file_path, 'w') as file:
                 for item in dat:
-                    file.write(f"{item}\n")
+                    timestamp_bytes = item[:4]
+                    data_bytes = item[4:]
+                    timestamp_str = timestamp_bytes.hex()
+                    data_str = data_bytes.hex()
+                    file.write(f"{timestamp_str}:{data_str}\n")
             logging.info(f"Data saved to {self.file_path}")
 
 if __name__ == "__main__":
