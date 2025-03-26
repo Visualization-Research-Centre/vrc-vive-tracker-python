@@ -255,18 +255,24 @@ class Recorder:
         sock.settimeout(5.0)  # Timeout after 5 seconds of inactivity
         
         logging.info(f"Listening for UDP broadcast on {ip}:{listen_port}...")
+                # Prepare a socket for bypassing data
+        bypass_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        bypass_ip = self.sending_ip_address.get()
+        bypass_port = self.sending_port.get()
         
         dat = []
         while self.listener_running:
             try:
-                #TODO test 
                 # Receive data from the socket
                 data, addr = sock.recvfrom(1024)  # Buffer size is 1024 bytes
                 elapsed_time = time.time() - self.start_time if self.start_time else 0
                 elapsed_time_bytes = struct.pack('<f', elapsed_time)  # Convert timestamp to bytes
-                data = elapsed_time_bytes + data  # Prepend timestamp to data
-                dat.append(data)
-                # print(f"Received data: {data}")
+                data_with_timestamp = elapsed_time_bytes + data  # Prepend timestamp to data
+                dat.append(data_with_timestamp)
+                
+                # Bypass the data to another application
+                bypass_sock.sendto(data, (bypass_ip, bypass_port))
+                logging.info(f"Bypassed data to {bypass_ip}:{bypass_port}")
             except socket.timeout:
                 logging.warning("UDP listener timed out")
                 continue
