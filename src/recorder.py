@@ -30,8 +30,8 @@ class Recorder:
         self.file_path = None
         self.default_ip_listen = ''
         self.default_port_listen = 2222
-        # self.default_ip_send = '127.0.0.1'
-        self.default_ip_send = '192.168.50.215'
+        self.default_ip_send = '127.0.0.1'
+        # self.default_ip_send = '192.168.50.215'
         self.default_port_send = 2223
 
         # IP Address Label and Entry for listening
@@ -125,6 +125,8 @@ class Recorder:
         logging.info("UDP listener stopped")
 
     def record(self):
+        if not self.listener_running:
+            self.connect()
         self.file_path = filedialog.asksaveasfilename(initialdir=self.project_dir, defaultextension=".txt", filetypes=[("Text files", "*.txt"), ("All files", "*.*")])
         if self.file_path:
             self.record_path.set(self.file_path)
@@ -135,8 +137,6 @@ class Recorder:
             self.record_entry.config(width=len(self.file_path))
             # Start recording
             self.record_button.config(text="Recording", bg="yellow", relief=tk.SUNKEN)
-            if not self.listener_running:
-                self.connect()
             self.recording = True
             self.start_time = time.time()
             logging.info(f"Recording started at: {self.file_path}")
@@ -179,8 +179,8 @@ class Recorder:
                         line = file.readline()
                         if not line:
                             if file.tell() == 0:  # Check if the file is empty
-                                messagebox.showwarning("Warning", "The file is empty!")
-                                logging.warning("The file is empty!")
+                                # messagebox.showwarning("Warning", "The file is empty!")
+                                logging.warning("The file is empty, stopped!")
                                 self.playing = False
                                 self.play_button.config(text="Play", bg="SystemButtonFace", relief=tk.RAISED)
                                 break
@@ -188,7 +188,7 @@ class Recorder:
                                 time.sleep(0.1)  # Timeout to prevent getting stuck
                         timestamp_str, data_str = line.strip().split(':', 1)
 
-                        print(len(data_str))
+                        # print(len(data_str))
 
                         if len(data_str) > 300:
                             # get the current value of the slider
@@ -199,7 +199,7 @@ class Recorder:
                             timestamp = struct.unpack('<f', bytes.fromhex(timestamp_str))[0]
                             data = bytes.fromhex(data_str)
 
-                            print('data:', data)    
+                            # print('data:', data)    
 
                             # decode the data
                             decoder = TrackerDecoder()
