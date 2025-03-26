@@ -148,93 +148,90 @@ class Recorder:
             self.play_path.set(file_path)  # Set the play path to the loaded file
             self.load_entry.config(width=len(file_path))
             logging.info(f"Loaded file: {file_path}")
-
+   
     def start_playing(self):
         if self.play_path.get():
-            self.playing = True
+            self.playing_event = threading.Event()  # Use threading.Event for thread-safe control
+            self.playing_event.set()  # Signal the thread to start
             self.play_thread = threading.Thread(target=self.play, daemon=True)
             self.play_thread.start()
             logging.info("Started playing")
             self.play_button.config(text="Playing", bg="yellow", relief=tk.SUNKEN)
         else:
-            # messagebox.showwarning("Warning", "No file loaded to play!")
             logging.warning("No file loaded to play!")
 
     def stop_playing(self):
-        self.playing = False
+        if hasattr(self, 'playing_event') and self.playing_event.is_set():
+            self.playing_event.clear()  # Signal the thread to stop
+            self.root.after(100, self.check_thread_termination)  # Check thread termination periodically
+        logging.info("Stop signal sent")
+
+    def check_thread_termination(self):
         if self.play_thread and self.play_thread.is_alive():
-            self.play_thread.join()
-        logging.info("Stopped playing")
-        self.play_button.config(text="Play", bg="SystemButtonFace", relief=tk.RAISED)
+            self.root.after(100, self.check_thread_termination)
+        else:
+            logging.info("Play thread terminated")
+            self.play_button.config(text="Play", bg="SystemButtonFace", relief=tk.RAISED)
 
     def play(self):
         sending_ip = self.sending_ip_address.get()
         sending_port = self.sending_port.get()
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.settimeout(0.5)  # Set a timeout for socket operations
         last_timestamp = 0
-        while self.playing:
-            try:
-                with open(self.play_path.get(), 'r') as file:
-                    while True:
-                        line = file.readline()
-                        if not line:
-                            if file.tell() == 0:  # Check if the file is empty
-                                # messagebox.showwarning("Warning", "The file is empty!")
-                                logging.warning("The file is empty, stopped!")
-                                self.playing = False
-                                self.play_button.config(text="Play", bg="SystemButtonFace", relief=tk.RAISED)
-                                break
-                            else:
-                                time.sleep(0.1)  # Timeout to prevent getting stuck
-                        timestamp_str, data_str = line.strip().split(':', 1)
 
-                        # print(len(data_str))
-
-                        if len(data_str) > 300:
-                            # get the current value of the slider
-                            slider_value = self.slider.get()
-                            # print(f"Slider value: {slider_value}")
-
-                            # get the timestamp and data from the line
-                            timestamp = struct.unpack('<f', bytes.fromhex(timestamp_str))[0]
-                            data = bytes.fromhex(data_str)
-
-                            # print('data:', data)    
-
-                            # decode the data
-                            decoder = TrackerDecoder()
-                            decoder.action_process_data(data)
-                            decoded_data = decoder.vr_tracker_devices
-                            # print(f"Decoded data: {decoded_data}")
-
-                            # encode the data
-                            encoder = TrackerEncoder()
-                            encoder.vr_tracker_devices = decoded_data
-                            encoded_data = encoder.action_process_data()
-                            # print(f"Encoded data: {encoded_data}")
-
-                            self.send_udp_message(sending_ip, sending_port, data, sock)
-
-                            time_diff = timestamp - last_timestamp
-
-                            if time_diff > 0.0001:
-                                time.sleep(time_diff)  # Add a small delay to simulate real-time sending
-
-                            last_timestamp = timestamp
-
-                        if not self.playing:
+        try:
+            with open(self.play_path.get(), 'r') as file:
+                while self.playing_event.is_set():
+                    line = file.readline()
+                    if not line:
+                        if file.tell() == 0:  # Check if the file is empty
+                            logging.warning("The file is empty, stopped!")
+                            self.playing_event.clear()
                             break
+                        else:
+                            time.sleep(0.1)  # Timeout to prevent getting stuck
+                            continue
 
-            except Exception as e:
-                # messagebox.showerror("Error", f"Failed to send UDP message: {e}")
-                logging.error(f"Failed to send UDP message: {e}")
-                break
-        logging.info('Done playing')
+                    try:
+                        timestamp_str, data_str = line.strip().split(':', 1)
+                    except ValueError as e:
+                        logging.error(f"Failed to unpack line: {line.strip()} - {e}")
+                        continue
+                    # timestamp_str, data_str = line.strip().split(':', 1)
+                    
+                    if len(data_str) > 300:
+                        slider_value = self.slider.get()
+                        timestamp = struct.unpack('<f', bytes.fromhex(timestamp_str))[0]
+                        data = bytes.fromhex(data_str)
+
+                        # Decode and encode data
+                        decoder = TrackerDecoder()
+                        decoder.action_process_data(data)
+                        decoded_data = decoder.vr_tracker_devices
+                        encoder = TrackerEncoder()
+                        encoder.vr_tracker_devices = decoded_data
+                        encoded_data = encoder.action_process_data()
+
+                        # Send UDP message
+                        self.send_udp_message(sending_ip, sending_port, data, sock)
+
+                        time_diff = timestamp - last_timestamp
+                        if time_diff > 0.0001:
+                            time.sleep(time_diff)  # Add a small delay to simulate real-time sending
+
+                        last_timestamp = timestamp
+        except Exception as e:
+            logging.error(f"Error during playback: {e}")
+        finally:
+            sock.close()
+            logging.info("Done playing")
+            self.play_button.config(text="Play", bg="SystemButtonFace", relief=tk.RAISED)
 
     def send_udp_message(self, ip, port, message, socket):
         try:
             socket.sendto(message, (ip, port))
-            logging.info(f"Sent message: {message} to {ip}:{port}")
+            # logging.info(f"Sent message: {message} to {ip}:{port}")
         except Exception as e:
             # messagebox.showerror("Error", f"Failed to send UDP message: {e}")
             logging.error(f"Failed to send UDP message: {e}")
@@ -255,7 +252,7 @@ class Recorder:
         sock.settimeout(5.0)  # Timeout after 5 seconds of inactivity
         
         logging.info(f"Listening for UDP broadcast on {ip}:{listen_port}...")
-                # Prepare a socket for bypassing data
+        # Prepare a socket for bypassing data
         bypass_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         bypass_ip = self.sending_ip_address.get()
         bypass_port = self.sending_port.get()
@@ -272,7 +269,7 @@ class Recorder:
                 
                 # Bypass the data to another application
                 bypass_sock.sendto(data, (bypass_ip, bypass_port))
-                logging.info(f"Bypassed data to {bypass_ip}:{bypass_port}")
+                # logging.info(f"Bypassed data to {bypass_ip}:{bypass_port}")
             except socket.timeout:
                 logging.warning("UDP listener timed out")
                 continue
