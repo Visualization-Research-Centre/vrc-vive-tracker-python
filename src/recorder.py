@@ -111,7 +111,7 @@ class Recorder:
                 logging.info("UDP listener started")
             except Exception as e:
                 self.listener_running = False
-                messagebox.showerror("Error", f"Failed to start UDP listener: {e}")
+                # messagebox.showerror("Error", f"Failed to start UDP listener: {e}")
                 logging.error(f"Failed to start UDP listener: {e}")
 
     def disconnect(self):
@@ -157,7 +157,7 @@ class Recorder:
             logging.info("Started playing")
             self.play_button.config(text="Playing", bg="yellow", relief=tk.SUNKEN)
         else:
-            messagebox.showwarning("Warning", "No file loaded to play!")
+            # messagebox.showwarning("Warning", "No file loaded to play!")
             logging.warning("No file loaded to play!")
 
     def stop_playing(self):
@@ -205,13 +205,13 @@ class Recorder:
                             decoder = TrackerDecoder()
                             decoder.action_process_data(data)
                             decoded_data = decoder.vr_tracker_devices
-                            print(f"Decoded data: {decoded_data}")
+                            # print(f"Decoded data: {decoded_data}")
 
                             # encode the data
                             encoder = TrackerEncoder()
                             encoder.vr_tracker_devices = decoded_data
                             encoded_data = encoder.action_process_data()
-                            print(f"Encoded data: {encoded_data}")
+                            # print(f"Encoded data: {encoded_data}")
 
                             self.send_udp_message(sending_ip, sending_port, data, sock)
 
@@ -226,7 +226,7 @@ class Recorder:
                             break
 
             except Exception as e:
-                messagebox.showerror("Error", f"Failed to send UDP message: {e}")
+                # messagebox.showerror("Error", f"Failed to send UDP message: {e}")
                 logging.error(f"Failed to send UDP message: {e}")
                 break
         logging.info('Done playing')
@@ -234,9 +234,9 @@ class Recorder:
     def send_udp_message(self, ip, port, message, socket):
         try:
             socket.sendto(message, (ip, port))
-            # logging.info(f"Sent message: {message} to {ip}:{port}")
+            logging.info(f"Sent message: {message} to {ip}:{port}")
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to send UDP message: {e}")
+            # messagebox.showerror("Error", f"Failed to send UDP message: {e}")
             logging.error(f"Failed to send UDP message: {e}")
 
     def udp_broadcast_listener(self):
