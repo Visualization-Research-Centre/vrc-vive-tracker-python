@@ -53,7 +53,7 @@ class App(tk.Tk):
         self.protocol("WM_DELETE_WINDOW", self.exit_gracefully)
         
 
-        # Use frames to group related widgets
+        # Network frame
         input_frame = ttk.LabelFrame(self, text="Network Settings")
         input_frame.grid(row=0, column=0, padx=10, sticky="ew")
 
@@ -64,7 +64,6 @@ class App(tk.Tk):
         self.receiver_ip_entry = ttk.Entry(input_frame)
         self.receiver_ip_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
         self.receiver_ip_entry.insert(0, self.receiver_ip)
-        # self.receiver_ip_entry.config(state='disabled')
 
         self.receiver_port_label = ttk.Label(input_frame, text="Receiver Port:")
         self.receiver_port_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
@@ -87,9 +86,17 @@ class App(tk.Tk):
         self.sender_port_entry = ttk.Entry(input_frame)
         self.sender_port_entry.grid(row=3, column=1, padx=5, pady=5, sticky="ew")
         self.sender_port_entry.insert(0, self.sender_port)
+        
+        # Test Connection
+        self.connect_label = ttk.Label(input_frame, text="Test Connection")
+        self.connect_label.grid(row=4, column=0, padx=5, pady=5, sticky="w")
+        
+        self.connect_var = tk.IntVar()
+        self.connect_checkbox = ttk.Checkbutton(input_frame, variable=self.connect_var, command=self.handle_connect_checkbox)
+        self.connect_checkbox.grid(row=4, column=1, padx=5, pady=5, sticky="w")
 
 
-        # Use ttk buttons and labels
+        # Controls frame
         button_frame = ttk.LabelFrame(self, text="Controls")
         button_frame.grid(row=1, column=0, padx=10, sticky="ew")
 
@@ -116,6 +123,44 @@ class App(tk.Tk):
 
         self.btn_stop_play = ttk.Button(button_frame, text="Stop Playback", command=self.stop_playback, state=tk.DISABLED)
         self.btn_stop_play.grid(row=3, column=1, padx=5, pady=5, sticky="w")
+        
+        
+        # Process frame
+        process_frame = ttk.LabelFrame(self, text="Process")
+        process_frame.grid(row=2, column=0, padx=10, sticky="ew")
+        
+        self.augemnt_label = ttk.Label(process_frame, text="Augment Data:")
+        self.augemnt_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        
+        self.augment_var = tk.IntVar()
+        self.augment_checkbox = ttk.Checkbutton(process_frame, variable=self.augment_var)
+        self.augment_checkbox.grid(row=0, column=1, padx=5, pady=5, sticky="w")
+        
+        self.augment_slider = ttk.Scale(process_frame, from_=1, to=15, orient=tk.HORIZONTAL)
+        self.augment_slider.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        
+        self.augment_slider_label = ttk.Label(process_frame)
+        self.augment_slider_label.grid(row=1, column=1, padx=5, pady=5, sticky="w")
+        # self.augment_slider.bind("<ButtonRelease-1>", self.update_augment_slider_label)
+        # self.augment_slider.bind("<Motion>", self.update_augment_slider_label)
+        self.augment_slider.set(0)
+        
+        self.compute_blobs_label = ttk.Label(process_frame, text="Compute Blobs:")
+        self.compute_blobs_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        
+        self.compute_blobs_var = tk.IntVar()
+        self.compute_blobs_checkbox = ttk.Checkbutton(process_frame, variable=self.compute_blobs_var)
+        self.compute_blobs_checkbox.grid(row=2, column=1, padx=5, pady=5, sticky="w")
+        
+        self.compute_blobs_slider = ttk.Scale(process_frame, from_=1, to=40, orient=tk.HORIZONTAL)
+        self.compute_blobs_slider.grid(row=3, column=0, padx=5, pady=5, sticky="w")
+        
+        self.compute_blobs_slider_label = ttk.Label(process_frame)
+        self.compute_blobs_slider_label.grid(row=3, column=1, padx=5, pady=5, sticky="w")
+        # self.compute_blobs_slider.bind("<ButtonRelease-1>", self.update_compute_blobs_slider_label)
+        # self.compute_blobs_slider.bind("<Motion>", self.update_compute_blobs_slider_label)
+        self.compute_blobs_slider.set(0)
+        
 
         # fill the empty space
         self.columnconfigure(0, weight=1)
