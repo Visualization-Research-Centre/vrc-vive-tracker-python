@@ -7,7 +7,7 @@ from vive_encoder import ViveEncoder
 
 if __name__ == "__main__":
 
-    # Example usage
+    # example for encoding and decoding raw data 
     data = [
         {
             'name': '2B9219E9',
@@ -61,18 +61,41 @@ if __name__ == "__main__":
     decoded_data = decoder.vr_tracker_devices
     print('\ndecoded_data:', decoded_data)
 
-    assert encoder.vr_tracker_devices == decoded_data
-    assert decoder.vr_tracker_devices == data
-    print('\nTest passed!')
+    assert data == encoder.vr_tracker_devices
+    print('\nTest 1 passed!')
+    assert data == decoded_data
+    print('\nTest 2 passed!')
 
     # encode the decoded data again and compare with the original encoded data
     encoder.vr_tracker_devices = decoder.vr_tracker_devices
     encoded_data_2 = encoder.return_byte_data()
     assert encoded_data == encoded_data_2
-    print('\nTest passed!')
+    print('\nTest 3 passed!')
 
-    encoded_data_string = b'\xae\x08\x072B9219E9\x03d\x01\x01\xeb\x00&?n\x9f{@RQo@\xb91W\xbf\xc9\xc0\x07\xbf\xcdT\xc1=xZj=8992BF03\x03T\x00\x005*M\xc0 B\x05>\n\xbaC\xc0\xc7\x1bq\xbe\xf6Pw\xbf\x1bH\x1d=\xde\x7f\xca=4CDFCB8B\x032\x01\x01=\\\x06\xbf\xc0^\xe1?\x01\xde\xae\xbeu\rD\xbfS\x83\x89=\xe2\xc9\xbf=N\xf4!?3AD07E7B\x04\x00\x01\x01\x99\xd6w@>\xbbl@Dj!\xbf\xe0\xb3{>\xe6\x18%\xbf\x1e\x800>@\xec3?292B164A\x04\x00\x01\x01\xc0\xe4m\xc0X\\s@\xcf\xbe\xc7>\x00)\x80\xbe\x1dH$\xbf\x1d4\x99>l\t)\xbf26D688D6\x04\x00\x01\x01\xefI\xec\xbd\x9c\x02v@\xf4\xe9m@{\xf6\xa3\xbc\xd5\xadq\xbf/m\xa7>9^\x1a\xbd1FA80E86\x04\x00\x01\x01\xd8\xb3R\xbc Gt@\xef\tp\xc0\xe0\xe1\xb7>\xb2\x07-={\t\xee\xbb\x02\xabn?'
+    # another example of decoding byte data 
+    byte_data = b'\xae\x08\x072B9219E9\x03d\x01\x01\xeb\x00&?n\x9f{@RQo@\xb91W\xbf\xc9\xc0\x07\xbf\xcdT\xc1=xZj=8992BF03\x03T\x00\x005*M\xc0 B\x05>\n\xbaC\xc0\xc7\x1bq\xbe\xf6Pw\xbf\x1bH\x1d=\xde\x7f\xca=4CDFCB8B\x032\x01\x01=\\\x06\xbf\xc0^\xe1?\x01\xde\xae\xbeu\rD\xbfS\x83\x89=\xe2\xc9\xbf=N\xf4!?3AD07E7B\x04\x00\x01\x01\x99\xd6w@>\xbbl@Dj!\xbf\xe0\xb3{>\xe6\x18%\xbf\x1e\x800>@\xec3?292B164A\x04\x00\x01\x01\xc0\xe4m\xc0X\\s@\xcf\xbe\xc7>\x00)\x80\xbe\x1dH$\xbf\x1d4\x99>l\t)\xbf26D688D6\x04\x00\x01\x01\xefI\xec\xbd\x9c\x02v@\xf4\xe9m@{\xf6\xa3\xbc\xd5\xadq\xbf/m\xa7>9^\x1a\xbd1FA80E86\x04\x00\x01\x01\xd8\xb3R\xbc Gt@\xef\tp\xc0\xe0\xe1\xb7>\xb2\x07-={\t\xee\xbb\x02\xabn?'
     decoder = ViveDecoder()
-    decoder.parse_byte_data(encoded_data_string)
+    decoder.parse_byte_data(byte_data)
     decoded_data = decoder.vr_tracker_devices
-    print('\ndecoded_data:', decoded_data)
+    # print('\ndecoded_data:', decoded_data)
+
+    # encode the decoded data again and compare with the original encoded data
+    encoder.vr_tracker_devices = decoded_data
+    encoded_data_2 = encoder.return_byte_data()
+    print('\nencoded_data_2:\n', encoded_data_2)
+    print('\nbyte_data:\n', byte_data)
+    # assert byte_data == encoded_data_2
+    print('\nTest 4 passed!')
+
+    for i, (b1, b2) in enumerate(zip(byte_data, encoded_data_2)):
+        if b1 != b2:
+            print(f"Mismatch at byte {i}: {b1} != {b2}")
+            # check which byte is different
+            print(f"Byte {i} in byte_data: {byte_data[i]}")
+            print(f"Byte {i} in encoded_data_2: {encoded_data_2[i]}")
+            # print the byte in binary format
+            print(f"Byte {i} in byte_data: {bin(byte_data[i])}")
+            print(f"Byte {i} in encoded_data_2: {bin(encoded_data_2[i])}")
+
+            
+

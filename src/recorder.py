@@ -205,13 +205,7 @@ class Recorder:
                         timestamp = struct.unpack('<f', bytes.fromhex(timestamp_str))[0]
                         data = bytes.fromhex(data_str)
 
-                        # Decode and encode data
-                        decoder = TrackerDecoder()
-                        decoder.action_process_data(data)
-                        decoded_data = decoder.vr_tracker_devices
-                        encoder = TrackerEncoder()
-                        encoder.vr_tracker_devices = decoded_data
-                        encoded_data = encoder.action_process_data()
+                        augmented_data = augment_data(data, slider_value)
 
                         # Send UDP message
                         self.send_udp_message(sending_ip, sending_port, data, sock)

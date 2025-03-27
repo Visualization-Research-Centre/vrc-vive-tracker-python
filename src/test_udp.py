@@ -23,13 +23,48 @@ def send_udp_broadcast(ip, port, message, framerate):
     finally:
         sock.close()
 
-if __name__ == "__main__":
-    BROADCAST_IP = "192.168.50.150"  # Broadcast IP address
-    BROADCAST_PORT = 2223  # Broadcast port
-    MESSAGE = bytes.fromhex("0050433bae0807324239323139453903640101c40a263f99a07b40ea4f6f40713057bf0fc307bf6e32c13da5a86a3d383939324246303303540000352a4dc02042053e0aba43c0c71b71bef65077bf1b481d3dde7fca3d344344464342384203320101fa2906bf426de13f5cb6b1be294b44bf16858c3d5d71c03d0b9c213f33414430374537420400010199d677403ebb6c40446a21bfe0b37b3ee61825bf1e80303e40ec333f323932423136344104000101c0e46dc0585c7340cfbec73e002980be1d4824bf1d34993e6c0929bf323644363838443604000101ef49ecbd9c027640f4e96d407bf6a3bcd5ad71bf2f6da73e395e1abd314641383045383604000101d8b352bc20477440ef0970c0e0e1b73eb2072d3d7b09eebb02ab6e3f")  # Example byte string
-    FRAMERATE = 30  # Frames per second
+def receive_udp_data(ip, port, output_file):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.bind((ip, port))
 
-    send_udp_broadcast(BROADCAST_IP, BROADCAST_PORT, MESSAGE, FRAMERATE)
+    logging.info(f"Listening on {ip}:{port}")
+
+    with open(output_file, 'wb') as file:
+        try:
+            while True:
+                data, addr = sock.recvfrom(1024)
+                logging.info(f"Received message: {data} from {addr}")
+                file.write(data)
+        except KeyboardInterrupt:
+            logging.info("Stopped receiving UDP data")
+        except Exception as e:
+            logging.error(f"Failed to receive UDP message: {e}")
+        finally:
+            sock.close()
+
+if __name__ == "__main__":
+    import os
+    BROADCAST_IP = ""  # Broadcast IP address
+    BROADCAST_PORT = 2222  # Broadcast port
+    RECEIVE_PORT = 2223  # Port to receive UDP data
+    timestamp = struct.pack('f', time.time())  # Convert current time to byte data
+    MESSAGE = timestamp + b'\x00P\xC3;\xAE\x08\x072B9219E9\x03d\x01\x01\xC4\n&?\x99\xA0{@\xEAOo@q0W\xBF\x0F\xC3\x07\xBFn2\xC1=\xA5\xA8j=8992BF03\x03T\x00\x005*M\xC0 B\x05>\n\xBA\xC3\xC0\xC7\x1Bq\xBE\xF6Pw\xBF\x1B\x48\x1D=\xDE\x7F\xCA=4CDFCB8B\x032\x01\x01\xFA)\x06\xBFBm\xE1?\\\xB6\xB1\xBE)KD\xBF\x16\x85\x8C=]q\xC0=\x0B\x9C!?\x33AD07E7B\x04\x00\x01\x01\x99\xD6w@>\xBBl@Dj!\xBF\xE0\xB3{>\xE6\x18%\xBF\x1E\x80\x03\x03\xE4\x0E\xC33\xF2\x29B\xB1dA\x04\x00\x01\x01\xC0\xE4m\xC0X\\s@\xCF\xBE\xC7>\x00)\x80\xBE\x1DHBK\xBF\x1D4\x99>l\t)\xBF2d688D6\x04\x00\x01\x01\xEFI\xEC\xBD\x9C\x02v@\xF4\xE9m@{\xF6\xA3\xBC\xD5\xADq\xBF/o\xDA\x73\xE3\x95\xE1\xAB\xD3\x14FA80E86\x04\x00\x01\x01\xD8\xB3R\xBC Gt@\xEF\tp\xC0\xE0\xE1\xB7>\xB2\x07-=\x7B\t\xEE\xBB\x02\xABn?'
+    FRAMERATE = 30  # Frames per second
+    project_dir = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'recordings'))
+    OUTPUT_FILE = os.path.join(project_dir, "test_file.txt")
+
+    # write MESSAGE to file
+    with open(OUTPUT_FILE, 'wb') as file:
+        for i in range(100):
+            file.write(MESSAGE)
+
+    # Start sending UDP broadcast in a separate thread
+    # import threading
+    # sender_thread = threading.Thread(target=send_udp_broadcast, args=(BROADCAST_IP, BROADCAST_PORT, MESSAGE, FRAMERATE))
+    # sender_thread.start()
+
+    # # Start receiving UDP data and saving to file
+    # receive_udp_data("", RECEIVE_PORT, OUTPUT_FILE)
 
 
 # run on target host to check
