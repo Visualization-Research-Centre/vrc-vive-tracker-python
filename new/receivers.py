@@ -64,7 +64,6 @@ class UDPReceiverQ:
         with self.lock:
             self.running = False
         if self.thread:
-            print("Joining thread...")
             self.thread.join()
         logging.info("Receiver stopped.")
         
@@ -92,8 +91,7 @@ class UDPReceiverQ:
         return data
     
     def close(self):
-        self.running = False
-        self._is_connected = False
+        self.stop()
         if self.sock:
             self.sock.close()
             self.sock = None

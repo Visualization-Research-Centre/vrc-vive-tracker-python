@@ -14,6 +14,15 @@ class Player:
         self.thread = None
         self.lock = threading.Lock()
 
+    def load(self, file_path):
+        file_type = file_path.split(".")[-1]
+        if file_type == "bin":
+            self.load_from_bin(file_path)
+        elif file_type == "txt":
+            self.load_from_text(file_path)
+        else:
+            logging.error(f"Unsupported file type: {file_type}")
+
     def load_from_bin(self, file_path):
         self.data = []
         if not os.path.exists(file_path):
@@ -66,6 +75,7 @@ class Player:
         self.thread = threading.Thread(target=self.play_loop)
         self.thread.start()
         logging.info("Player started.")
+        return True
 
     def is_playing(self):
         with self.lock:

@@ -53,7 +53,8 @@ class Recorder:
                 self.record()
             time.sleep(0.000000001)
 
-    def save(self, file_path, file_type="bin"):
+    def save(self, file_path):
+        file_type = file_path.split(".")[-1]
         if file_type == "bin":
             self.save_binary(file_path)
         elif file_type == "txt":
