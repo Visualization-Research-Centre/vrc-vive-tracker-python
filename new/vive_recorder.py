@@ -29,6 +29,8 @@ class Recorder:
         logging.info("Recorder started.")
         self.recording = True
         self.start_time = time.time()
+        self.data = []
+        return True
 
     def stop(self):
         logging.info("Recorder stopped.")
@@ -50,6 +52,14 @@ class Recorder:
             if self.recording:
                 self.record()
             time.sleep(0.000000001)
+
+    def save(self, file_path, file_type="bin"):
+        if file_type == "bin":
+            self.save_binary(file_path)
+        elif file_type == "txt":
+            self.save_text(file_path)
+        else:
+            logging.error("Invalid file type. Use 'bin' or 'txt'.")
 
     def save_binary(self, file_path):
         if len(self.data) != 0:

@@ -18,7 +18,6 @@ class App(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Vive Tracker Recorder")
-        self.geometry("400x400")
         self.recorder = None
         self.player = None
         self.sender = None
@@ -29,20 +28,34 @@ class App(tk.Tk):
         self.save_file_type = None
 
         self.receiver_ip = '127.0.0.1'
-        self.receiver_port = 2222
+        self.receiver_port = 2223
         self.sender_ip = '127.0.0.1'
-        self.sender_port = 2223
+        self.sender_port = 2224
 
+        self.states = [
+            "Idle",
+            "Recording",
+            "Playing"
+        ]
+        self.state = self.states[0]
         self.init_ui()
+
+        self.player = Player()
+
 
     def init_ui(self):
 
         self.style = ttk.Style()
         self.style.theme_use('clam') # clam, alt, default, classic
 
+        self.minsize(500, 150)
+        self.configure(bg="#dfdfdf")
+        self.protocol("WM_DELETE_WINDOW", self.exit_gracefully)
+        
+
         # Use frames to group related widgets
         input_frame = ttk.LabelFrame(self, text="Network Settings")
-        input_frame.grid(row=0, column=0, pady=10, padx=10, sticky="ew")
+        input_frame.grid(row=0, column=0, padx=10, sticky="ew")
 
         # Receiver IP and Port
         self.receiver_ip_label = ttk.Label(input_frame, text="Receiver IP:")
@@ -51,7 +64,7 @@ class App(tk.Tk):
         self.receiver_ip_entry = ttk.Entry(input_frame)
         self.receiver_ip_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
         self.receiver_ip_entry.insert(0, self.receiver_ip)
-        self.receiver_ip_entry.config(state='disabled')
+        # self.receiver_ip_entry.config(state='disabled')
 
         self.receiver_port_label = ttk.Label(input_frame, text="Receiver Port:")
         self.receiver_port_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
@@ -78,7 +91,7 @@ class App(tk.Tk):
 
         # Use ttk buttons and labels
         button_frame = ttk.LabelFrame(self, text="Controls")
-        button_frame.grid(row=1, column=0, pady=10, padx=10, sticky="ew")
+        button_frame.grid(row=1, column=0, padx=10, sticky="ew")
 
         self.btn_save = ttk.Button(button_frame, text="Save Data Location", command=self.save_data_location)
         self.btn_save.grid(row=0, column=0, padx=5, pady=5, sticky="w")
@@ -108,13 +121,73 @@ class App(tk.Tk):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
 
-        # set background color in rgb
-        self.configure(bg="#dfdfdf")
+        self.update_state("Idle")
 
-        # set window size 
-        self.minsize(500, 150)
+
+    def exit_gracefully(self):
+        logging.info("Exiting...")
+        if self.receiver:
+            self.receiver.close()
+        if self.sender:
+            self.sender.close()
+        if self.recorder:
+            self.recorder.close()
+        if self.player:
+            self.player.stop()
+        self.destroy()
+
+
+    def update_state(self, new_state):
+
+        self.state = new_state
+
+        # signals
+        is_save_file_path_valid = self.save_file_path is not None
+        is_load_file_path_valid = self.file_path is not None
+    
+        if self.state == self.states[0]: # idle
+            # save
+            self.btn_save.config(state=tk.NORMAL)
+            if is_save_file_path_valid:
+                self.btn_start.config(state=tk.NORMAL)
+            else:
+                self.btn_start.config(state=tk.DISABLED)
+                self.save_data_label.config(text="Please select a save location.")
+            
+            # load 
+            self.btn_load.config(state=tk.NORMAL)
+            if is_load_file_path_valid:
+                self.btn_play.config(state=tk.NORMAL)
+            else:
+                self.btn_play.config(state=tk.DISABLED)
+                self.load_data_label.config(text="Please select a load location.")
+            
+            # stop buttons: play and record
+            self.btn_stop.config(state=tk.DISABLED)
+            self.btn_stop_play.config(state=tk.DISABLED)
+        
+        elif self.state == self.states[1]: # recording
+            self.btn_load.config(state=tk.DISABLED)
+            self.btn_play.config(state=tk.DISABLED)
+            self.btn_start.config(state=tk.DISABLED)
+            self.btn_stop.config(state=tk.NORMAL)
+            self.btn_stop_play.config(state=tk.DISABLED)
+        
+        elif self.state == self.states[2]: # playing
+            self.btn_load.config(state=tk.DISABLED)
+            self.btn_play.config(state=tk.DISABLED)
+            self.btn_start.config(state=tk.DISABLED)
+            self.btn_stop.config(state=tk.DISABLED)
+            self.btn_stop_play.config(state=tk.NORMAL)
+
+    def update_variables(self):
+        self.receiver_ip = self.receiver_ip_entry.get()
+        self.receiver_port = int(self.receiver_port_entry.get())
+        self.sender_ip = self.sender_ip_entry.get()
+        self.sender_port = int(self.sender_port_entry.get())
 
     def start_recording(self):
+        self.update_variables()
         if self.receiver:
             self.receiver.close()
         if self.sender:
@@ -123,82 +196,87 @@ class App(tk.Tk):
             self.recorder.close()        
         if self.receiver_ip == '127.0.0.1':
             self.receiver_ip = ''
+        logging.info(f"Starting recording with receiver: {self.receiver_ip}:{self.receiver_port} and sender: {self.sender_ip}:{self.sender_port}")
         self.receiver = ViveUDPReceiverQ(ip=self.receiver_ip, port=self.receiver_port)
         self.sender = UDPSenderQ(ip=self.sender_ip, port=self.sender_port)
         self.recorder = Recorder(callback_data=self.receiver.get_data_block, callback=self.sender.update)
-        if self.save_file_path:
-            self.receiver.start()
-            self.recorder.start()
-            self.sender.start()
-            self.btn_start.config(state=tk.DISABLED)
-            self.btn_stop.config(state=tk.NORMAL)
-            self.btn_play.config(state=tk.DISABLED)
-        else:
-            self.save_data_label.config(text="Please select a save location.")
+        if not self.receiver.start():
+            messagebox.showerror("Error", "Failed to start receiver. Check the IP and Port.")
+            return
+        if not self.recorder.start():
+            messagebox.showerror("Error", "Failed to start recorder.")
+            self.receiver.close()
+            return
+        if not self.sender.start():
+            messagebox.showerror("Error", "Failed to start sender. Check the IP and Port.")
+            self.receiver.close()
+            self.recorder.close()
+            return
+        self.update_state("Recording")
+            
 
     def stop_recording(self):
         self.recorder.stop()
         self.receiver.stop()
         self.sender.stop()
-        self.btn_start.config(state=tk.NORMAL)
-        self.btn_stop.config(state=tk.DISABLED)
-        self.btn_play.config(state=tk.NORMAL)
-        if self.save_file_type == "bin":
-            self.recorder.save_binary(self.save_file_path)
-        elif self.save_file_type == "txt":
-            self.recorder.save_text(self.save_file_path)
-        else:
-            logging.error("Invalid file type.")
+        self.recorder.save(self.save_file_path, self.save_file_type)
+        self.update_state("Idle")
         
 
     def play_data(self):
+
+        self.update_variables()
         if self.sender:
             self.sender.close()
         self.sender = UDPSenderQ(ip=self.sender_ip, port=self.sender_port)
         self.sender.start()
-        self.player.set_callback(self.sender.update)
-        self.player.play_in_thread()
-        self.btn_play.config(state=tk.DISABLED)
-        self.btn_stop_play.config(state=tk.NORMAL)
-
-    def stop_playback(self):
-        self.player.stop()
-        self.sender.stop()
-        self.btn_play.config(state=tk.NORMAL)
-        self.btn_stop_play.config(state=tk.DISABLED)
-
-    def load_data(self):
-        self.file_path = filedialog.askopenfilename()
-        if self.file_path.endswith(".bin"):
-            self.file_type = "bin"
-        elif self.file_path.endswith(".txt"):
-            self.file_type = "txt"
-        else:
-            messagebox.showerror("Error", "Invalid file type. Please select a .bin or .txt file.")
-            return
-        self.player = Player()
         if self.file_type == "bin":
             self.player.load_from_bin(self.file_path)
         elif self.file_type == "txt":
             self.player.load_from_text(self.file_path)
+        self.player.set_callback(self.sender.update)
+        self.player.start()
+        self.update_state("Playing")
 
-        self.btn_play.config(state=tk.NORMAL)
+    def stop_playback(self):
+        self.player.stop()
+        self.sender.stop()
+        self.update_state("Idle")
+
+    def load_data(self):
+        self.file_path = filedialog.askopenfilename()
+        if self.file_path:
+            if self.file_path.endswith(".bin"):
+                self.file_type = "bin"
+            elif self.file_path.endswith(".txt"):
+                self.file_type = "txt"
+            else:
+                messagebox.showerror("Error", "Invalid file type. Please select a .bin or .txt file.")
+                return
+        else:
+            messagebox.showwarning("Warning", "No file selected.")
+            self.file_path = None
+        self.update_state("Idle")
         self.load_data_label.config(text=self.trim_path(self.file_path))
-
 
     def save_data_location(self):
         # open a file dialog to select the save location
         self.save_file_path = filedialog.asksaveasfilename()
-        # check if bin or txt is already in the file path and add it if not
-        self.save_file_type = "bin"
-        if not self.save_file_path.endswith(".bin"):
-            if self.save_file_path.endswith(".txt"):
-                self.save_file_type = "txt"
-            else: 
-                self.save_file_type = "bin"
-                self.save_file_path += ".bin"
-        # update the label 
-        self.save_data_label.config(text=self.trim_path(self.save_file_path))
+        if self.save_file_path:
+            # check if bin or txt is already in the file path and add it if not
+            self.save_file_type = "bin"
+            if not self.save_file_path.endswith(".bin"):
+                if self.save_file_path.endswith(".txt"):
+                    self.save_file_type = "txt"
+                else: 
+                    self.save_file_type = "bin"
+                    self.save_file_path += ".bin"
+            # update the label
+            self.save_data_label.config(text=self.trim_path(self.save_file_path))
+        else:
+            messagebox.showwarning("Warning", "No save location selected.")
+            self.save_file_path = None
+        self.update_state("Idle")
 
     def trim_path(self, path):
         if len(path) > 50:

@@ -15,10 +15,10 @@ class Player:
         self.lock = threading.Lock()
 
     def load_from_bin(self, file_path):
+        self.data = []
         if not os.path.exists(file_path):
             logging.error(f"File not found: {file_path}")
             return
-
         with open(file_path, "rb") as f:
             while True:
                 first = f.read(4)
@@ -32,10 +32,10 @@ class Player:
                 self.data.append((timestamp, data))
                 
     def load_from_text(self, file_path):
+        self.data = []
         if not os.path.exists(file_path):
             logging.error(f"File not found: {file_path}")
             return
-
         with open(file_path, "r") as f:
             for line in f:
                 timestamp = line.strip().split(": ")[0]
@@ -44,7 +44,6 @@ class Player:
                 self.data.append((float(timestamp), data))
 
     def play(self):
-        logging.info("Player started.")
         start_time = time.time()
         for timestamp, data in self.data:
             if not self.playing:
@@ -53,7 +52,6 @@ class Player:
             if time_diff < timestamp:
                 time.sleep(timestamp - time_diff)
             if self.callback:
-                logging.info(f"Playing data: {data}")
                 self.callback(data)
         logging.info("Player looped.")
 
@@ -62,11 +60,12 @@ class Player:
             self.play()
         logging.info("Loop stopped.")
 
-    def play_in_thread(self):
+    def start(self):
         with self.lock:
             self.playing = True
         self.thread = threading.Thread(target=self.play_loop)
         self.thread.start()
+        logging.info("Player started.")
 
     def is_playing(self):
         with self.lock:
@@ -81,6 +80,9 @@ class Player:
 
     def set_callback(self, callback):
         self.callback = callback
+
+    def __exit__(self):
+        self.stop()
 
 if __name__ == "__main__":
 
