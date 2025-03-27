@@ -1,6 +1,5 @@
 import time
 import struct
-from threading import Lock
 
 class ViveDecoder:
     def __init__(self):
@@ -9,7 +8,6 @@ class ViveDecoder:
         self.ignored_vive_tracker_names = []
         self.label = 2222
         self.current_timestamp = 0
-        self._initialised = 0
 
     def add_ignore_vive_tracker_name(self, input_tracker_name):
         input_tracker_name_lower = input_tracker_name.lower()
