@@ -2,7 +2,7 @@ import os
 import struct
 import time
 import logging
-from receivers import ViveUDPReceiverQ
+from receivers import UDPReceiverQ
 from senders import UDPSenderQ
 from player import Player
 from vive_recorder import Recorder
@@ -197,7 +197,7 @@ class App(tk.Tk):
         if self.receiver_ip == '127.0.0.1':
             self.receiver_ip = ''
         logging.info(f"Starting recording with receiver: {self.receiver_ip}:{self.receiver_port} and sender: {self.sender_ip}:{self.sender_port}")
-        self.receiver = ViveUDPReceiverQ(ip=self.receiver_ip, port=self.receiver_port)
+        self.receiver = UDPReceiverQ(ip=self.receiver_ip, port=self.receiver_port)
         self.sender = UDPSenderQ(ip=self.sender_ip, port=self.sender_port)
         self.recorder = Recorder(callback_data=self.receiver.get_data_block, callback=self.sender.update)
         if not self.receiver.start():

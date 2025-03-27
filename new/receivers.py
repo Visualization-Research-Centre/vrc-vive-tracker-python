@@ -5,11 +5,9 @@ import time
 import logging
 import queue
 
-from vive_decoder import ViveDecoder
-
 
 class UDPReceiverQ:
-    def __init__(self, ip='', port=2222):
+    def __init__(self, ip='', port=2222, callback=None):
         self.ip = ip
         self.port = port
         self.buffer_size = 1024
@@ -24,8 +22,10 @@ class UDPReceiverQ:
         while self.running:
             try:
                 data, addr = self.sock.recvfrom(self.buffer_size)
-                self.data_queue.put(data)
-                print(data)
+                if self.callback:
+                    self.callback(data)
+                else:
+                    self.data_queue.put(data)
             except socket.timeout:
                 continue
             except socket.error as e:
@@ -99,24 +99,11 @@ class UDPReceiverQ:
         self.close()
 
 
-class ViveUDPReceiverQ(UDPReceiverQ):
-    def __init__(self,  ip='', port=2222, ignore_list=[]):
-        super().__init__(ip, port)
-        self.decoder = ViveDecoder()
-        self.decoder.ignored_vive_tracker_names = ignore_list
-
-    def get_parsed_data(self):
-        data = self.get_data_block()
-        if data:
-            return self.decoder.parse_byte_data(data)
-        return None
-
-
 ### TEST ###
 
 if __name__ == "__main__":
  
-    receiver = ViveUDPReceiverQ('', 2223)
+    receiver = UDPReceiverQ('', 2223)
     receiver.start()
 
     i = 0
@@ -124,7 +111,7 @@ if __name__ == "__main__":
 
     while i < num:
         print(i)
-        data = receiver.get_parsed_data()
+        data = receiver.get_data_block()
         print(data)
         i += 1
 
