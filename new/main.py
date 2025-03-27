@@ -35,7 +35,8 @@ class App(tk.Tk):
         self.states = [
             "Idle",
             "Recording",
-            "Playing"
+            "Playing",
+            "Testing"
         ]
         self.state = self.states[0]
         self.init_ui()
@@ -217,6 +218,7 @@ class App(tk.Tk):
             self.btn_start.config(state=tk.DISABLED)
             self.btn_stop.config(state=tk.NORMAL)
             self.btn_stop_play.config(state=tk.DISABLED)
+            self.connect_checkbox.config(state=tk.DISABLED)
         
         elif self.state == self.states[2]: # playing
             self.btn_load.config(state=tk.DISABLED)
@@ -224,12 +226,49 @@ class App(tk.Tk):
             self.btn_start.config(state=tk.DISABLED)
             self.btn_stop.config(state=tk.DISABLED)
             self.btn_stop_play.config(state=tk.NORMAL)
+            self.connect_checkbox.config(state=tk.DISABLED)
+            
+        elif self.state == self.states[3]: # testing
+            pass
+            
 
     def update_variables(self):
         self.receiver_ip = self.receiver_ip_entry.get()
         self.receiver_port = int(self.receiver_port_entry.get())
         self.sender_ip = self.sender_ip_entry.get()
         self.sender_port = int(self.sender_port_entry.get())
+        self.augment = self.augment_var.get()
+        self.compute_blobs = self.compute_blobs_var.get()
+        
+        
+    def handle_connect_checkbox(self):
+        if self.connect_var.get():
+            self.connect_test()
+        else:
+            self.disconnect_test()
+        
+    def connect_test(self):
+        logging.info("Enable bypass mode.")
+        sender = UDPSenderQ(ip=self.sender_ip, port=self.sender_port)
+        receiver = UDPReceiverQ(ip=self.receiver_ip, port=self.receiver_port, callback=sender.update)
+        if not receiver.start():
+            messagebox.showerror("Error", "Failed to start receiver. Check the IP and Port.")
+            return
+        if not sender.start():
+            messagebox.showerror("Error", "Failed to start sender. Check the IP and Port.")
+            receiver.close()
+            return
+        self.update_state("Testing")
+        
+        
+    def disconnect_test(self):
+        logging.info("Disable bypass mode.")
+        self.receiver.close()
+        self.sender.close()
+        self.update_state("Idle")
+        
+        
+
 
     def start_recording(self):
         self.update_variables()
