@@ -8,8 +8,6 @@ import queue
 from vive_decoder import ViveDecoder
 
 
-logging.basicConfig(level=logging.INFO, format='%(filename)s - %(levelname)s - %(message)s')
-
 class UDPReceiverQ:
     def __init__(self, ip='', port=2222):
         self.ip = ip
