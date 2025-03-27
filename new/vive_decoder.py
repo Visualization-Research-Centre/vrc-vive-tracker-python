@@ -84,7 +84,8 @@ class ViveDecoder:
 
                 can_add_tracker_device = True
                 if self.ignore_tracking_reference:
-                    if vr_tracker_device['device_class'] == 4:  # TrackingReference
+                    if (vr_tracker_device['name'].lower() in self.ignored_vive_tracker_names or
+                        vr_tracker_device['device_class'] == 4):
                         can_add_tracker_device = False
 
                 if can_add_tracker_device:
