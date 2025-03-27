@@ -1,4 +1,9 @@
-/cs
 /recordings
 /venv
+
+*.bin
+*.txt
+
 .DS_Store
+
+__pycache__
