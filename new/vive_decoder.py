@@ -8,12 +8,45 @@ class ViveDecoder:
         self.ignored_vive_tracker_names = []
         self.label = 2222
         self.current_timestamp = 0
+        self.blobs = []
 
     def add_ignore_vive_tracker_name(self, input_tracker_name):
         input_tracker_name_lower = input_tracker_name.lower()
         if input_tracker_name_lower not in self.ignored_vive_tracker_names:
             self.ignored_vive_tracker_names.append(input_tracker_name_lower)
 
+    def parse_blob_data(self, byte_data):
+        if len(byte_data) <= 2:
+            return
+
+        label = int.from_bytes(byte_data[:2], 'little')
+        if label != self.label:
+            return
+
+        blobs_count = byte_data[2]
+        blobs = []
+        index = 3
+
+        if blobs_count > 0:
+            for _ in range(blobs_count):
+                blob_name = byte_data[index:index+8].decode('utf-8')
+                position = [
+                    struct.unpack('<f', byte_data[index + 8:index + 12])[0],
+                    struct.unpack('<f', byte_data[index + 12:index + 16])[0]
+                ]
+                weight = struct.unpack('<f', byte_data[index + 16:index + 20])[0]
+                blob = {
+                    'name': blob_name,
+                    'position': position,
+                    'weight': weight
+                }
+                blobs.append(blob)
+                index += 20
+
+        self.blobs = blobs
+
+        return self.blobs
+    
     def parse_byte_data(self, byte_data):
         if len(byte_data) <= 2:
             return

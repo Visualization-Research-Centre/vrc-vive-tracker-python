@@ -140,6 +140,35 @@ if __name__ == "__main__":
     assert len(decoder.vr_tracker_devices) == 2, "Number of devices is not equal to 2"
     print('\nTest 6 passed!')
 
+    # =============================================================================
+    # test the blobs
+
+    blobs = [
+        {
+            'name': '2B9219E9',
+            'position': [-1.123, 1.123],
+            'weight': 2.0
+        },
+        {
+            'name': '2B9219E1',
+            'position': [0.123, 0.123],
+            'weight': 1.0
+        }
+    ]
+
+    # encode the blobs
+    encoder = ViveEncoder()
+    encoder.blobs = blobs
+    encoded_blobs = encoder.return_blob_data()
+    print('\nencoded_blobs:', encoded_blobs)
+
+    # decode the blobs
+    decoder = ViveDecoder()
+    decoder.parse_blob_data(encoded_blobs)
+    decoded_blobs = decoder.blobs
+    print('\ndecoded_blobs:', decoded_blobs)
+
+
 
             
 

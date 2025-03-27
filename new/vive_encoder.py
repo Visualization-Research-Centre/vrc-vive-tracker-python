@@ -5,6 +5,7 @@ class ViveEncoder:
         self._vr_tracker_devices = []
         self._ignored_vive_tracker_names = []
         self.label = 2222
+        self._blobs = []
 
     @property
     def vr_tracker_devices(self):
@@ -16,6 +17,14 @@ class ViveEncoder:
     @vr_tracker_devices.setter
     def vr_tracker_devices(self, value):
         self._vr_tracker_devices = value or []
+
+    @property
+    def blobs(self):
+        return self._blobs
+    
+    @blobs.setter
+    def blobs(self, value):
+        self._blobs = value or []
 
     @property
     def ignored_vive_tracker_names(self):
@@ -30,6 +39,20 @@ class ViveEncoder:
         if name not in self._ignored_vive_tracker_names:
             self._ignored_vive_tracker_names.append(name)
 
+    def return_blob_data(self):
+        byte_data = bytearray()
+        byte_data.extend(self.label.to_bytes(2, 'little'))
+        byte_data.append(len(self._blobs))
+
+        for blob in self._blobs:
+            byte_data.extend(blob['name'].encode('utf-8'))
+
+            for pos in blob['position']:
+                byte_data.extend(struct.pack('<f', pos))
+            byte_data.extend(struct.pack('<f', blob['weight']))
+
+        return bytes(byte_data)
+    
     def return_byte_data(self):
         byte_data = bytearray()
         byte_data.extend(self.label.to_bytes(2, 'little'))
