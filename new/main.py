@@ -217,25 +217,26 @@ class App(tk.Tk):
 
     def stop_recording(self):
         self.recorder.stop()
-        self.receiver.stop()
+        self.receiver.close()
         self.sender.stop()
-        self.recorder.save(self.save_file_path, self.save_file_type)
+        self.recorder.save(self.save_file_path)
         self.update_state("Idle")
         
 
     def play_data(self):
-
         self.update_variables()
         if self.sender:
             self.sender.close()
         self.sender = UDPSenderQ(ip=self.sender_ip, port=self.sender_port)
-        self.sender.start()
-        if self.file_type == "bin":
-            self.player.load_from_bin(self.file_path)
-        elif self.file_type == "txt":
-            self.player.load_from_text(self.file_path)
+        if not self.sender.start():
+            messagebox.showerror("Error", "Failed to start sender. Check the IP and Port.")
+            return
+        self.player.load(self.file_path)
         self.player.set_callback(self.sender.update)
-        self.player.start()
+        if not self.player.start():
+            messagebox.showerror("Error", "Failed to start player.")
+            self.sender.close()
+            return
         self.update_state("Playing")
 
     def stop_playback(self):
@@ -246,32 +247,20 @@ class App(tk.Tk):
     def load_data(self):
         self.file_path = filedialog.askopenfilename()
         if self.file_path:
-            if self.file_path.endswith(".bin"):
-                self.file_type = "bin"
-            elif self.file_path.endswith(".txt"):
-                self.file_type = "txt"
-            else:
+            if not self.file_path.endswith(".bin") and not self.file_path.endswith(".txt"):
                 messagebox.showerror("Error", "Invalid file type. Please select a .bin or .txt file.")
-                return
+                self.file_path = None
+            self.load_data_label.config(text=self.trim_path(self.file_path))
         else:
             messagebox.showwarning("Warning", "No file selected.")
             self.file_path = None
-        self.update_state("Idle")
-        self.load_data_label.config(text=self.trim_path(self.file_path))
+        self.update_state("Idle")    
 
     def save_data_location(self):
-        # open a file dialog to select the save location
         self.save_file_path = filedialog.asksaveasfilename()
         if self.save_file_path:
-            # check if bin or txt is already in the file path and add it if not
-            self.save_file_type = "bin"
-            if not self.save_file_path.endswith(".bin"):
-                if self.save_file_path.endswith(".txt"):
-                    self.save_file_type = "txt"
-                else: 
-                    self.save_file_type = "bin"
+            if not self.save_file_path.endswith(".bin") and not self.save_file_path.endswith(".txt"):
                     self.save_file_path += ".bin"
-            # update the label
             self.save_data_label.config(text=self.trim_path(self.save_file_path))
         else:
             messagebox.showwarning("Warning", "No save location selected.")
