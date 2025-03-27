@@ -47,8 +47,8 @@ class UDPReceiverQ:
     def stop(self):
         if self.running:
             self.running = False
-            if self.thread is not None:
-                self.thread.join()
+            # if self.thread is not None:
+            #     self.thread.join()
             logging.info("Receiver stopped.")
 
     def get_data_block(self):
