@@ -29,9 +29,9 @@ class App(tk.Tk):
         self.save_file_type = None
 
         self.receiver_ip = '127.0.0.1'
-        self.receiver_port = 2223
+        self.receiver_port = 2222
         self.sender_ip = '127.0.0.1'
-        self.sender_port = 2224
+        self.sender_port = 2223
 
         self.init_ui()
 

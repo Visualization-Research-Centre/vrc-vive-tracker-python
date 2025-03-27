@@ -52,19 +52,25 @@ class Recorder:
             time.sleep(0.000000001)
 
     def save_binary(self, file_path):
-        with open(file_path, "wb") as f:
-            for timestamp, data in self.data:
-                f.write(struct.pack("<f", timestamp))
-                f.write(struct.pack("I", len(data)))
-                f.write(data)
-            logging.info(f"Data saved to {file_path} with {timestamp} seconds.")
+        if len(self.data) != 0:
+            with open(file_path, "wb") as f:
+                for timestamp, data in self.data:
+                    f.write(struct.pack("<f", timestamp))
+                    f.write(struct.pack("I", len(data)))
+                    f.write(data)
+                logging.info(f"Data saved to {file_path} with {timestamp} seconds.")
+        else:
+            logging.error("No data to log")
                 
 
-    def save_text(self, file_path):
-        with open(file_path, "w") as f:
-            for timestamp, data in self.data:
-                f.write(f"{timestamp}: {data}\n")
-            logging.info(f"Data saved to {file_path} with {timestamp} seconds.")
+    def save_text(self, file_path):        
+        if len(self.data) != 0:
+            with open(file_path, "w") as f:
+                for timestamp, data in self.data:
+                    f.write(f"{timestamp}: {data}\n")
+                logging.info(f"Data saved to {file_path} with {timestamp} seconds.")
+        else:
+            logging.error("No data to log")
 
     def close(self):
         self.killme = True
