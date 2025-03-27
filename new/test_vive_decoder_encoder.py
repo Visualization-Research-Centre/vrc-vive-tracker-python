@@ -1,5 +1,3 @@
-import time
-import struct
 import numpy as np
 
 from vive_decoder import ViveDecoder    
