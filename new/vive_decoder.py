@@ -15,7 +15,7 @@ class ViveDecoder:
         if name not in self._ignored_vive_tracker_names:
             self._ignored_vive_tracker_names.append(name)
     
-    def decode_data(self, byte_data):
+    def decode(self, byte_data):
         if len(byte_data) <= 2:
             return
 

@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 
-from vive_augmenter import augment_data
+from vive_augmentor import ViveAugmentor
 from vive_decoder import ViveDecoder
 
 def visualize_devices(decoded_data):
@@ -32,16 +32,19 @@ if __name__ == "__main__":
 
     # decode data
     decoder = ViveDecoder()
-    decoder.decode_data(byte_data)
+    decoder.decode(byte_data)
     decoded_data = decoder.vive_trackers
     num_devices = len(decoded_data)
     print('num_devices:', num_devices)
+
+    # create an instance of the ViveAugmentor class
+    augmentor = ViveAugmentor()
 
     # =============================================================================
     # test 1, no augmentation
     slider_value = num_devices
 
-    augmented_data = augment_data(decoded_data, slider_value)
+    augmented_data = augmentor.augment(decoded_data, slider_value)
     visualize_devices(augmented_data)
 
     assert decoded_data == augmented_data, "Data is not equal to augmented_data"
@@ -51,7 +54,7 @@ if __name__ == "__main__":
     # test 2, reduce the number of devices
     slider_value = num_devices - 1
 
-    augmented_data = augment_data(decoded_data, slider_value)
+    augmented_data = augmentor.augment(decoded_data, slider_value)
     visualize_devices(augmented_data)
     
     assert len(augmented_data) == slider_value, "Number of devices is not equal to slider_value"
@@ -61,7 +64,7 @@ if __name__ == "__main__":
     # test 3, add more devices
     slider_value = num_devices + 19
 
-    augmented_data = augment_data(decoded_data, slider_value)
+    augmented_data = augmentor.augment(decoded_data, slider_value)
     visualize_devices(augmented_data)
 
     assert len(augmented_data) == slider_value, "Number of devices is not equal to slider_value"

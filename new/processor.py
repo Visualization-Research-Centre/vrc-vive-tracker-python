@@ -19,6 +19,7 @@ class Processor:
         def process(self):
             bin_data = self.callback_data()
             
+            # TODO where do we add ignored devices?
             tracker_data = self.decoder.decode(bin_data)
                         
             if self.augment:
@@ -26,8 +27,8 @@ class Processor:
 
             blobs = self.blobber.get_blobs(tracker_data)
 
-            self.encoder.add_tracker_data(tracker_data)
-            self.encoder.add_blobs(blobs)
+            self.encoder.vive_trackers = tracker_data
+            self.encoder.blobs = blobs
             self.data = self.encoder.encode()
 
             if self.callback:

@@ -6,7 +6,7 @@ class ViveEncoder:
         self.blobs = []
         self.label = 2222
 
-    def return_byte_data(self):
+    def encode(self):
         # Create byte data
         byte_data = bytearray()
 

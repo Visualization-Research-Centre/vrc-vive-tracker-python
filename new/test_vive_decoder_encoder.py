@@ -41,14 +41,14 @@ if __name__ == "__main__":
     # encode the data
     encoder = ViveEncoder()
     encoder.vive_trackers = vive_trackers
-    encoded_data = encoder.return_byte_data()
+    encoded_data = encoder.encode()
     
     assert vive_trackers == encoder.vive_trackers, "Data is not equal to vr_tracker_devices"
     print('\nTest 1 passed!')
     
     # decode the data
     decoder = ViveDecoder()
-    decoder.decode_data(encoded_data)
+    decoder.decode(encoded_data)
     decoded_data = decoder.vive_trackers
     # print('\ndecoded_data:', decoded_data)
 
@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     # encode the decoded data again and compare with the original encoded data
     encoder.vive_trackers = decoded_data 
-    assert encoded_data == encoder.return_byte_data()
+    assert encoded_data == encoder.encode()
     print('\nTest 3 passed!')
 
     # =============================================================================
@@ -98,13 +98,13 @@ if __name__ == "__main__":
 
     # decode the data
     decoder = ViveDecoder()
-    decoder.decode_data(byte_data)
+    decoder.decode(byte_data)
     decoded_data = decoder.vive_trackers
     # print('\ndecoded_data:', decoded_data)
 
     # encode the decoded data
     encoder.vive_trackers = decoded_data
-    encoded_data = encoder.return_byte_data()
+    encoded_data = encoder.encode()
     # print('\nencoded_data:\n', encoded_data)
 
     # assert byte_data == encoded_data
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     print('\nTest 5 passed!')
 
     # decode the data again
-    decoder.decode_data(byte_data)
+    decoder.decode(byte_data)
     assert len(decoder.vive_trackers) == 2, "Number of devices is not equal to 2"
     print('\nTest 6 passed!')
 
@@ -153,11 +153,11 @@ if __name__ == "__main__":
     # encode the blobs
     encoder = ViveEncoder()
     encoder.blobs = blobs
-    encoded_data = encoder.return_byte_data()
+    encoded_data = encoder.encode()
 
     # decode the blobs
     decoder = ViveDecoder()
-    decoder.decode_data(encoded_data)
+    decoder.decode(encoded_data)
     decoded_trackers = decoder.vive_trackers
     decoded_blobs = decoder.blobs
 
@@ -166,10 +166,10 @@ if __name__ == "__main__":
 
     # add trackers and blobs
     encoder.vive_trackers = vive_trackers
-    encoded_data = encoder.return_byte_data()
+    encoded_data = encoder.encode()
 
     decoder = ViveDecoder()
-    decoder.decode_data(encoded_data)
+    decoder.decode(encoded_data)
     decoded_trackers = decoder.vive_trackers
     decoded_blobs = decoder.blobs
 
