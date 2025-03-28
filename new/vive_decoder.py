@@ -62,31 +62,34 @@ class ViveDecoder:
                     'rotation': rotation
                 }
 
-                if device_class == 2:
-                    vr_tracker_device['ul_button_pressed'] = int.from_bytes(byte_data[index + 40:index + 48], 'little')
-                    vr_tracker_device['r_axis0'] = [
-                        struct.unpack('<f', byte_data[index + 48:index + 52])[0],
-                        struct.unpack('<f', byte_data[index + 52:index + 56])[0]
-                    ]
-                    vr_tracker_device['r_axis1'] = [
-                        struct.unpack('<f', byte_data[index + 56:index + 60])[0],
-                        struct.unpack('<f', byte_data[index + 60:index + 64])[0]
-                    ]
-                    vr_tracker_device['r_axis2'] = [
-                        struct.unpack('<f', byte_data[index + 64:index + 68])[0],
-                        struct.unpack('<f', byte_data[index + 68:index + 72])[0]
-                    ]
-                    vr_tracker_device['r_axis3'] = [
-                        struct.unpack('<f', byte_data[index + 72:index + 76])[0],
-                        struct.unpack('<f', byte_data[index + 76:index + 80])[0]
-                    ]
-                    vr_tracker_device['r_axis4'] = [
-                        struct.unpack('<f', byte_data[index + 80:index + 84])[0],
-                        struct.unpack('<f', byte_data[index + 84:index + 88])[0]
-                    ]
-                    index += 88
-                else:
-                    index += 40
+                ## TODO device class 2 not tested
+                # if device_class == 2:
+                #     vr_tracker_device['ul_button_pressed'] = int.from_bytes(byte_data[index + 40:index + 48], 'little')
+                #     vr_tracker_device['r_axis0'] = [
+                #         struct.unpack('<f', byte_data[index + 48:index + 52])[0],
+                #         struct.unpack('<f', byte_data[index + 52:index + 56])[0]
+                #     ]
+                #     vr_tracker_device['r_axis1'] = [
+                #         struct.unpack('<f', byte_data[index + 56:index + 60])[0],
+                #         struct.unpack('<f', byte_data[index + 60:index + 64])[0]
+                #     ]
+                #     vr_tracker_device['r_axis2'] = [
+                #         struct.unpack('<f', byte_data[index + 64:index + 68])[0],
+                #         struct.unpack('<f', byte_data[index + 68:index + 72])[0]
+                #     ]
+                #     vr_tracker_device['r_axis3'] = [
+                #         struct.unpack('<f', byte_data[index + 72:index + 76])[0],
+                #         struct.unpack('<f', byte_data[index + 76:index + 80])[0]
+                #     ]
+                #     vr_tracker_device['r_axis4'] = [
+                #         struct.unpack('<f', byte_data[index + 80:index + 84])[0],
+                #         struct.unpack('<f', byte_data[index + 84:index + 88])[0]
+                #     ]
+                #     index += 88
+                # else:
+                #     index += 40
+
+                index += 40
 
                 can_add_tracker_device = True
                 if self.ignore_tracking_reference:
@@ -100,29 +103,34 @@ class ViveDecoder:
 
         self.vive_trackers = vive_trackers
 
+        # ====================================================================================
         # decode the blobs
         if index >= len(byte_data):
-            return  self.vive_trackers, None
+            return self.vive_trackers, None
         
+        # change battery to blobs_id for each tracker
+        for tracker in self.vive_trackers:
+            tracker['blob_id'] = int(tracker['battery'] * 100)
+            # remove battery
+            tracker.pop('battery')
+
         blobs_count = byte_data[index]
         blobs = []
         index += 1
 
         if blobs_count > 0:
             for _ in range(blobs_count):
-                blob_name = byte_data[index:index+8].decode('utf-8')
                 position = [
-                    struct.unpack('<f', byte_data[index + 8:index + 12])[0],
-                    struct.unpack('<f', byte_data[index + 12:index + 16])[0]
+                    struct.unpack('<f', byte_data[index:index + 4])[0],
+                    struct.unpack('<f', byte_data[index + 4:index + 8])[0]
                 ]
-                weight = struct.unpack('<f', byte_data[index + 16:index + 20])[0]
+                weight = struct.unpack('<f', byte_data[index + 8:index + 12])[0]
                 blob = {
-                    'name': blob_name,
                     'position': position,
                     'weight': weight
                 }
                 blobs.append(blob)
-                index += 20
+                index += 12
 
         self.blobs = blobs
 
