@@ -61,6 +61,10 @@ class Processor:
     def process(self):
         # get data
         bin_data = self.callback_data()
+
+        # to avoid freezing the UI we use a timeout on the queue get which can lead to None data
+        if bin_data is None:
+            return None
         
         # decode the data (find the trackers)
         self.decoder.decode(bin_data)
