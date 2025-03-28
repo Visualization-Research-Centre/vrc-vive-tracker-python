@@ -13,6 +13,8 @@ class UDPSenderQ:
         self.queue = queue.Queue()
         self.thread = None
         self.lock = threading.Lock()
+        if self.ip.endswith('.255'):
+            self.ip = ''
 
     def is_running(self):
         with self.lock:
@@ -38,6 +40,7 @@ class UDPSenderQ:
             return False
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             self.running = True
             self.thread = threading.Thread(target=self.send_data, daemon=True)
             self.thread.start()
