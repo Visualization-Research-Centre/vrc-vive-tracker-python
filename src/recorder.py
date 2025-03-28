@@ -38,6 +38,8 @@ class Recorder:
 
     def record(self):
         data = self.callback_data()
+        if data is None:
+            return
         time_diff = time.time() - self.start_time
         self.data.append((time_diff, data))
         if self.callback:

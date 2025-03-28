@@ -107,9 +107,11 @@ class UDPReceiverQ(DataSource):
                 self.stop()
     
     def get_data_block(self):
-        data = self.data_queue.get()
-        return data
-    
+        try:
+            return self.data_queue.get(timeout=1)
+        except queue.Empty:
+            return None
+        
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
@@ -212,8 +214,10 @@ class Player(DataSource):
         self.callback = callback
 
     def get_data_block(self):
-        data = self.queue.get()
-        return data
+        try:
+            return self.queue.get(timeout=1)
+        except queue.Empty:
+            return None
 
     def __exit__(self):
         self.stop()
