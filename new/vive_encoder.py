@@ -24,8 +24,12 @@ class ViveEncoder:
             # Encode device class (1 byte)
             byte_data.extend(struct.pack('<B', device['device_class']))
 
-            # Encode battery percentage (1 byte, scaled to 0-100)
-            byte_data.extend(struct.pack('<B', int(device['battery'] * 100)))
+            if self.blobs:
+                # Encode blob_id (1 byte, integer ranging from 0 to 10)
+                byte_data.extend(struct.pack('<B', int(device['blob_id'])))
+            else:
+                # Encode battery percentage (1 byte, scaled to 0-100)
+                byte_data.extend(struct.pack('<B', int(device['battery'] * 100)))
 
             # Encode status and tracking flags (1 byte each)
             byte_data.extend(struct.pack('<B', 1 if device['status'] else 0))
@@ -49,19 +53,18 @@ class ViveEncoder:
             #     for axis in range(5):
             #         byte_data.extend(struct.pack('<ff', *device[f'r_axis{axis}']))
 
-        # Add number of blobs (1 byte)
-        byte_data.extend(struct.pack('<B', len(self.blobs)))
+        # check if blobs are present
+        if self.blobs:
+            # Add number of blobs (1 byte)
+            byte_data.extend(struct.pack('<B', len(self.blobs)))
 
-        # Add blob data
-        for blob in self.blobs:
-            # Encode name (as bytes, followed by a null terminator for safety)
-            byte_data.extend(blob['name'].encode('utf-8'))
+            # Add blob data
+            for blob in self.blobs:
+                # Encode position (2 floats, 4 bytes each)
+                for pos in blob['position']:
+                    byte_data.extend(struct.pack('<f', pos))
 
-            # Encode position (3 floats, 4 bytes each)
-            for pos in blob['position']:
-                byte_data.extend(struct.pack('<f', pos))
-
-            # Encode weight (1 float, 4 bytes)
-            byte_data.extend(struct.pack('<f', blob['weight']))
+                # Encode weight (1 float, 4 bytes)
+                byte_data.extend(struct.pack('<f', blob['weight']))
 
         return bytes(byte_data)

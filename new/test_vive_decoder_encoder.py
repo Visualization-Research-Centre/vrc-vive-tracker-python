@@ -45,12 +45,13 @@ if __name__ == "__main__":
     
     assert vive_trackers == encoder.vive_trackers, "Data is not equal to vr_tracker_devices"
     print('\nTest 1 passed!')
-    
+    print(encoder.blobs)
+    print(encoder.vive_trackers)
     # decode the data
     decoder = ViveDecoder()
     decoder.decode(encoded_data)
     decoded_data = decoder.vive_trackers
-    # print('\ndecoded_data:', decoded_data)
+    print('\ndecoded_data:', decoded_data)
 
     assert vive_trackers == decoded_data, "Data is not equal to decoded_data"
     print('\nTest 2 passed!')
@@ -132,16 +133,48 @@ if __name__ == "__main__":
     # =============================================================================
     # test the blobs
 
+    vive_trackers_w_blobs = [
+        {
+            'name': '2B9219E9', 
+            'device_class': 3, 
+            'status': True, 
+            'is_tracked': True, 
+            'position': [0.6484515070915222, 3.931605815887451, 3.7393383979797363], 
+            'rotation': [-0.840602457523346, -0.5302854180335999, 0.09440002590417862, 0.05721518397331238],
+            'blob_id': 0.0
+        }, 
+        {
+            'name': '8992BF03', 
+            'device_class': 3, 
+            'status': False, 
+            'is_tracked': False, 
+            'position': [-3.2057011127471924, 0.13013505935668945, -3.058229923248291], 
+            'rotation': [-0.23545752465724945, -0.9660791158676147, 0.03839884325861931, 0.0988766998052597],
+            'blob_id': 1.0
+        }, 
+        {
+            'name': '4CDFCB8B', 
+            'device_class': 3, 
+            'status': True, 
+            'is_tracked': True, 
+            'position': [-0.5248449444770813, 1.7607040405273438, -0.3415375053882599], 
+            'rotation': [-0.7658303380012512, 0.06714501231908798, 0.09364677965641022, 0.6326340436935425],
+            'blob_id': 2.0
+        }
+    ]
+
     blobs = [
         {
-            'name': '2B9219E9',
             'position': [-1.1230000257492065, 1.1230000257492065],
             'weight': 2.0
         },
         {
-            'name': '2B9219E1',
             'position': [0.12300000339746475, 0.12300000339746475],
             'weight': 1.0
+        },
+        {
+            'position': [1.1230000257492065, 1.1230000257492065],
+            'weight': 3.0
         }
     ]
 
@@ -156,11 +189,12 @@ if __name__ == "__main__":
     decoded_trackers = decoder.vive_trackers
     decoded_blobs = decoder.blobs
 
+    print('\ndecoded_blobs:\n', decoded_blobs)
     assert decoded_trackers == [], "Decoded trackers are not equal to vive_trackers"
     assert decoded_blobs == blobs, "Decoded blobs are not equal to blobs"
 
     # add trackers and blobs
-    encoder.vive_trackers = vive_trackers
+    encoder.vive_trackers = vive_trackers_w_blobs
     encoded_data = encoder.encode()
 
     decoder = ViveDecoder()
@@ -168,9 +202,22 @@ if __name__ == "__main__":
     decoded_trackers = decoder.vive_trackers
     decoded_blobs = decoder.blobs
 
-    assert decoded_trackers == vive_trackers, "Decoded trackers are not equal to vive_trackers"
+    # encode again
+    encoder.vive_trackers = decoded_trackers
+    encoder.blobs = decoded_blobs
+    encoded_data = encoder.encode()
+
+    # decode again
+    decoder = ViveDecoder()
+    decoder.decode(encoded_data)
+    decoded_trackers_2 = decoder.vive_trackers
+    decoded_blobs_2 = decoder.blobs
+
+    print('\ndecoded_trackers:\n', decoded_trackers)
+    print('\nvive_trackers_w_blobs:\n', decoded_trackers_2)
+    assert decoded_trackers == decoded_blobs_2, "Decoded trackers are not equal to vive_trackers"
     print('\nTest 7 passed!')
-    assert decoded_blobs == blobs, "Decoded blobs are not equal to blobs"
+    assert decoded_blobs == decoded_blobs_2, "Decoded blobs are not equal to blobs"
     print('\nTest 8 passed!')
 
 
