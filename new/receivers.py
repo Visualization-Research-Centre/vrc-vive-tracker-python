@@ -17,6 +17,7 @@ class UDPReceiverQ:
         self.sock = None
         self._is_connected = False
         self.lock = threading.Lock()
+        self.callback = callback
 
     def handle_data(self):
         while self.running:
