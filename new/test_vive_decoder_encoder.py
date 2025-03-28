@@ -48,7 +48,7 @@ if __name__ == "__main__":
     
     # decode the data
     decoder = ViveDecoder()
-    decoder.decoded_data(encoded_data)
+    decoder.decode_data(encoded_data)
     decoded_data = decoder.vive_trackers
     # print('\ndecoded_data:', decoded_data)
 
@@ -98,7 +98,7 @@ if __name__ == "__main__":
 
     # decode the data
     decoder = ViveDecoder()
-    decoder.decoded_data(byte_data)
+    decoder.decode_data(byte_data)
     decoded_data = decoder.vive_trackers
     # print('\ndecoded_data:', decoded_data)
 
@@ -130,7 +130,7 @@ if __name__ == "__main__":
     print('\nTest 5 passed!')
 
     # decode the data again
-    decoder.decoded_data(byte_data)
+    decoder.decode_data(byte_data)
     assert len(decoder.vive_trackers) == 2, "Number of devices is not equal to 2"
     print('\nTest 6 passed!')
 
@@ -154,26 +154,24 @@ if __name__ == "__main__":
     encoder = ViveEncoder()
     encoder.set_blobs(blobs)
     encoded_data = encoder.return_byte_data()
-    print('\nencoded_blobs:', encoded_data)
 
     # decode the blobs
     decoder = ViveDecoder()
-    decoder.decoded_data(encoded_data)
+    decoder.decode_data(encoded_data)
     decoded_trackers = decoder.vive_trackers
-    print('\ndecoded_trackers:', decoded_trackers)
     decoded_blobs = decoder.blobs
-    print('\ndecoded_blobs:', decoded_blobs)
+
+    assert decoded_trackers == [], "Decoded trackers are not equal to vive_trackers"
+    assert decoded_blobs == blobs, "Decoded blobs are not equal to blobs"
 
     # add trackers and blobs
     encoder.set_vive_trackers(vive_trackers)
     encoded_data = encoder.return_byte_data()
 
     decoder = ViveDecoder()
-    decoder.decoded_data(encoded_data)
+    decoder.decode_data(encoded_data)
     decoded_trackers = decoder.vive_trackers
     decoded_blobs = decoder.blobs
-    print('\ndecoded_trackers:', decoded_trackers)
-    print('\ndecoded_blobs:', decoded_blobs)
 
     assert decoded_trackers == vive_trackers, "Decoded trackers are not equal to vive_trackers"
     print('\nTest 7 passed!')

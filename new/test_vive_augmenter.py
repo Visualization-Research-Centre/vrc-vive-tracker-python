@@ -32,8 +32,8 @@ if __name__ == "__main__":
 
     # decode data
     decoder = ViveDecoder()
-    decoder.parse_byte_data(byte_data)
-    decoded_data = decoder.vr_tracker_devices
+    decoder.decode_data(byte_data)
+    decoded_data = decoder.vive_trackers
     num_devices = len(decoded_data)
     print('num_devices:', num_devices)
 
@@ -45,6 +45,7 @@ if __name__ == "__main__":
     visualize_devices(augmented_data)
 
     assert decoded_data == augmented_data, "Data is not equal to augmented_data"
+    print('\nTest 1 passed!')
 
     # =============================================================================
     # test 2, reduce the number of devices
@@ -54,6 +55,7 @@ if __name__ == "__main__":
     visualize_devices(augmented_data)
     
     assert len(augmented_data) == slider_value, "Number of devices is not equal to slider_value"
+    print('\nTest 2 passed!')
 
     # =============================================================================
     # test 3, add more devices
@@ -63,3 +65,4 @@ if __name__ == "__main__":
     visualize_devices(augmented_data)
 
     assert len(augmented_data) == slider_value, "Number of devices is not equal to slider_value"
+    print('\nTest 3 passed!')
