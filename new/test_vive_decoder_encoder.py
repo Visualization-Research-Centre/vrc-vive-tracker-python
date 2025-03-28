@@ -100,25 +100,20 @@ if __name__ == "__main__":
     decoder = ViveDecoder()
     decoder.decode(byte_data)
     decoded_data = decoder.vive_trackers
-    # print('\ndecoded_data:', decoded_data)
 
-    # encode the decoded data
+    # encode the decoded data 2x
     encoder.vive_trackers = decoded_data
     encoded_data = encoder.encode()
-    # print('\nencoded_data:\n', encoded_data)
 
-    # assert byte_data == encoded_data
-    # print('\nTest 4 passed!')
+    # decode again
+    decoder.decode(encoded_data)
+    decoded_data = decoder.vive_trackers
 
-    # for i, (b1, b2) in enumerate(zip(byte_data, encoded_data)):
-    #     if b1 != b2:
-    #         print(f"Mismatch at byte {i}: {b1} != {b2}")
-    #         # check which byte is different
-    #         print(f"Byte {i} in byte_data: {byte_data[i]}")
-    #         print(f"Byte {i} in encoded_data: {encoded_data[i]}")
-    #         # print the byte in binary format
-    #         print(f"Byte {i} in byte_data: {bin(byte_data[i])}")
-    #         print(f"Byte {i} in encoded_data: {bin(encoded_data[i])}")
+    encoder.vive_trackers = decoded_data
+    encoded_data_2 = encoder.encode()
+
+    assert encoded_data == encoded_data_2, "Encoded data is not equal to encoded_data_2"
+    print('\nTest 4 passed!')
 
     # =============================================================================
     # test add ignore vive tracker name
