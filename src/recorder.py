@@ -92,7 +92,7 @@ class Recorder:
 
 
 if __name__ == "__main__":
-    from src.receivers import UDPReceiverQ
+    from src.sources import UDPReceiverQ
     from src.senders import UDPSenderQ
     
 
