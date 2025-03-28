@@ -2,9 +2,9 @@ import os
 import struct
 import time
 import logging
-from src.receivers import UDPReceiverQ, Player
+from src.sources import UDPReceiverQ, Player
 from src.senders import UDPSenderQ
-from src.vive_recorder import Recorder
+from src.recorder import Recorder
 from src.processor import Processor
 
 import tkinter as tk
