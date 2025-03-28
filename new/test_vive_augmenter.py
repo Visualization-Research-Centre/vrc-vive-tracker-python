@@ -1,8 +1,7 @@
 import matplotlib.pyplot as plt
 
-from augment_data import augment_data
+from vive_augmenter import augment_data
 from vive_decoder import ViveDecoder
-from vive_encoder import ViveEncoder
 
 def visualize_devices(decoded_data):
     """
