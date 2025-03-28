@@ -98,7 +98,8 @@ class ViveDecoder:
 
         # decode the blobs
         if index >= len(byte_data):
-            return  # Prevent index out of range error
+            return  self.vive_trackers, None
+        
         blobs_count = byte_data[index]
         blobs = []
         index += 1
