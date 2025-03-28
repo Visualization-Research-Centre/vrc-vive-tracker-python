@@ -4,50 +4,18 @@ import struct
 class ViveDecoder:
     def __init__(self):
         self.ignore_tracking_reference = True
-        self.vr_tracker_devices = []
+        self.vive_trackers = []
         self.ignored_vive_tracker_names = []
+        self.blobs = []
         self.label = 2222
         self.current_timestamp = 0
-        self.blobs = []
-
-    def add_ignore_vive_tracker_name(self, input_tracker_name):
-        input_tracker_name_lower = input_tracker_name.lower()
-        if input_tracker_name_lower not in self.ignored_vive_tracker_names:
-            self.ignored_vive_tracker_names.append(input_tracker_name_lower)
-
-    def parse_blob_data(self, byte_data):
-        if len(byte_data) <= 2:
-            return
-
-        label = int.from_bytes(byte_data[:2], 'little')
-        if label != self.label:
-            return
-
-        blobs_count = byte_data[2]
-        blobs = []
-        index = 3
-
-        if blobs_count > 0:
-            for _ in range(blobs_count):
-                blob_name = byte_data[index:index+8].decode('utf-8')
-                position = [
-                    struct.unpack('<f', byte_data[index + 8:index + 12])[0],
-                    struct.unpack('<f', byte_data[index + 12:index + 16])[0]
-                ]
-                weight = struct.unpack('<f', byte_data[index + 16:index + 20])[0]
-                blob = {
-                    'name': blob_name,
-                    'position': position,
-                    'weight': weight
-                }
-                blobs.append(blob)
-                index += 20
-
-        self.blobs = blobs
-
-        return self.blobs
+        
+    def add_ignored_vive_tracker_name(self, vive_tracker_name):
+        name = vive_tracker_name.lower()
+        if name not in self._ignored_vive_tracker_names:
+            self._ignored_vive_tracker_names.append(name)
     
-    def parse_byte_data(self, byte_data):
+    def decoded_data(self, byte_data):
         if len(byte_data) <= 2:
             return
 
@@ -55,8 +23,9 @@ class ViveDecoder:
         if label != self.label:
             return
 
+        # decode the trackers
         vr_tracker_devices_count = byte_data[2]
-        vr_tracker_devices = []
+        vive_trackers = []
         index = 3
 
         if vr_tracker_devices_count > 0:
@@ -117,13 +86,39 @@ class ViveDecoder:
 
                 can_add_tracker_device = True
                 if self.ignore_tracking_reference:
-                    if (vr_tracker_device['name'].lower() in self.ignored_vive_tracker_names or
-                        vr_tracker_device['device_class'] == 4):
+                    if (vr_tracker_device['name'].lower() in self.ignored_vive_tracker_names 
+                        or vr_tracker_device['name'].upper() in self.ignored_vive_tracker_names 
+                        or vr_tracker_device['device_class'] == 4):
                         can_add_tracker_device = False
 
                 if can_add_tracker_device:
-                    vr_tracker_devices.append(vr_tracker_device)
+                    vive_trackers.append(vr_tracker_device)
 
-        self.vr_tracker_devices = vr_tracker_devices
+        self.vive_trackers = vive_trackers
 
-        return self.vr_tracker_devices
+        # decode the blobs
+        if index >= len(byte_data):
+            return  # Prevent index out of range error
+        blobs_count = byte_data[index]
+        blobs = []
+        index += 1
+
+        if blobs_count > 0:
+            for _ in range(blobs_count):
+                blob_name = byte_data[index:index+8].decode('utf-8')
+                position = [
+                    struct.unpack('<f', byte_data[index + 8:index + 12])[0],
+                    struct.unpack('<f', byte_data[index + 12:index + 16])[0]
+                ]
+                weight = struct.unpack('<f', byte_data[index + 16:index + 20])[0]
+                blob = {
+                    'name': blob_name,
+                    'position': position,
+                    'weight': weight
+                }
+                blobs.append(blob)
+                index += 20
+
+        self.blobs = blobs
+
+        return self.vive_trackers, self.blobs

@@ -2,63 +2,49 @@ import struct
 
 class ViveEncoder:
     def __init__(self):
-        self._vr_tracker_devices = []
+        self._vive_trackers = []
         self._ignored_vive_tracker_names = []
-        self.label = 2222
         self._blobs = []
+        self.label = 2222
 
-    @property
-    def vr_tracker_devices(self):
+    def set_vive_trackers(self, vive_trackers):
+        self._vive_trackers = vive_trackers or []
+
+    def get_vive_trackers(self):
         return [
-            device for device in self._vr_tracker_devices
+            device for device in self._vive_trackers
             if device['name'].lower() not in self._ignored_vive_tracker_names
         ]
 
-    @vr_tracker_devices.setter
-    def vr_tracker_devices(self, value):
-        self._vr_tracker_devices = value or []
+    def set_ignored_vive_tracker_names(self, vive_tracker_names_list):
+        self._ignored_vive_tracker_names = [name.lower() for name in vive_tracker_names_list]
 
-    @property
-    def blobs(self):
-        return self._blobs
-    
-    @blobs.setter
-    def blobs(self, value):
-        self._blobs = value or []
-
-    @property
-    def ignored_vive_tracker_names(self):
-        return self._ignored_vive_tracker_names
-
-    @ignored_vive_tracker_names.setter
-    def ignored_vive_tracker_names(self, value):
-        self._ignored_vive_tracker_names = [name.lower() for name in value]
-
-    def action_add_ignore_vive_tracker_name(self, input_tracker_name):
-        name = input_tracker_name.lower()
+    def add_ignored_vive_tracker_name(self, vive_tracker_name):
+        name = vive_tracker_name.lower()
         if name not in self._ignored_vive_tracker_names:
             self._ignored_vive_tracker_names.append(name)
 
-    def return_blob_data(self):
-        byte_data = bytearray()
-        byte_data.extend(self.label.to_bytes(2, 'little'))
-        byte_data.append(len(self._blobs))
+    def get_ignored_vive_trackers(self):
+        return self._ignored_vive_tracker_names
 
-        for blob in self._blobs:
-            byte_data.extend(blob['name'].encode('utf-8'))
+    def set_blobs(self, blobs):
+        self._blobs = blobs or []
 
-            for pos in blob['position']:
-                byte_data.extend(struct.pack('<f', pos))
-            byte_data.extend(struct.pack('<f', blob['weight']))
-
-        return bytes(byte_data)
+    def get_blobs(self):
+        return self._blobs
     
     def return_byte_data(self):
+        # Create byte data
         byte_data = bytearray()
+        
+        # Add label
         byte_data.extend(self.label.to_bytes(2, 'little'))
-        byte_data.append(len(self._vr_tracker_devices))
+        
+        # Add number of devices
+        byte_data.append(len(self._vive_trackers))
 
-        for device in self._vr_tracker_devices:
+        # Add device data
+        for device in self._vive_trackers:
             byte_data.extend(device['name'].encode('utf-8'))
             byte_data.append(device['device_class'])
             byte_data.append(int(device['battery'] * 100))
@@ -75,5 +61,16 @@ class ViveEncoder:
                 for axis in range(5):
                     byte_data.extend(struct.pack('<f', device[f'r_axis{axis}'][0]))
                     byte_data.extend(struct.pack('<f', device[f'r_axis{axis}'][1]))
+
+        # Add number of blobs
+        byte_data.append(len(self._blobs))
+
+        # Add blob data
+        for blob in self._blobs:
+            byte_data.extend(blob['name'].encode('utf-8'))
+
+            for pos in blob['position']:
+                byte_data.extend(struct.pack('<f', pos))
+            byte_data.extend(struct.pack('<f', blob['weight']))
 
         return bytes(byte_data)
