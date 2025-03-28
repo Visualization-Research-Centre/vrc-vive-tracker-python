@@ -92,11 +92,11 @@ class Recorder:
 
 
 if __name__ == "__main__":
-    from receivers import ViveUDPReceiverQ
+    from receivers import UDPReceiverQ
     from senders import UDPSenderQ
     
 
-    receiver = ViveUDPReceiverQ('', 2223)
+    receiver = UDPReceiverQ('', 2223)
     receiver.start()
 
     sender = UDPSenderQ('127.0.0.1', 2224)
