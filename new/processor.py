@@ -14,12 +14,13 @@ class Processor:
         self.encoder = ViveEncoder()
         self.blobber = ViveBlobber()
         self.augmentor = ViveAugmentor()
+        self.ignored_vive_tracker_names = ['2B9219E9', 'FD0C50D1'] # TODO double check the ignored devices
 
 
         def process(self):
             bin_data = self.callback_data()
             
-            # TODO where do we add ignored devices?
+            self.decoder.ignored_vive_tracker_names = self.ignored_vive_tracker_names
             tracker_data = self.decoder.decode(bin_data)
                         
             if self.augment:
