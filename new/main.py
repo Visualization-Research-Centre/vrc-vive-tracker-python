@@ -39,6 +39,7 @@ class App(tk.Tk):
         self.sender = None
         self.receiver = None
         self.processor = None
+        self.src = None
 
         # states
         self.states = [
@@ -209,6 +210,8 @@ class App(tk.Tk):
             self.receiver.close()
         if self.sender:
             self.sender.close()
+        if self.src:
+            self.src.close()
 
 
     def process_data(self):
