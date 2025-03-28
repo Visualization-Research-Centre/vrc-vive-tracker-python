@@ -1,5 +1,5 @@
-from vive_decoder import ViveDecoder    
-from vive_encoder import ViveEncoder
+from src.vive_decoder import ViveDecoder    
+from src.vive_encoder import ViveEncoder
 
 if __name__ == "__main__":
 

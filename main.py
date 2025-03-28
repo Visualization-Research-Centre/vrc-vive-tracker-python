@@ -2,10 +2,10 @@ import os
 import struct
 import time
 import logging
-from receivers import UDPReceiverQ, Player
-from senders import UDPSenderQ
-from vive_recorder import Recorder
-from processor import Processor
+from src.receivers import UDPReceiverQ, Player
+from src.senders import UDPSenderQ
+from src.vive_recorder import Recorder
+from src.processor import Processor
 
 import tkinter as tk
 from tkinter import ttk

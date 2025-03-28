@@ -92,8 +92,8 @@ class Recorder:
 
 
 if __name__ == "__main__":
-    from receivers import UDPReceiverQ
-    from senders import UDPSenderQ
+    from src.receivers import UDPReceiverQ
+    from src.senders import UDPSenderQ
     
 
     receiver = UDPReceiverQ('', 2223)

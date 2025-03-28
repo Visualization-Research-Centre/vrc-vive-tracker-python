@@ -1,9 +1,9 @@
 import threading
 import logging
-from vive_decoder import ViveDecoder
-from vive_encoder import ViveEncoder
-from vive_blobber import ViveBlobber
-from vive_augmentor import ViveAugmentor
+from src.vive_decoder import ViveDecoder
+from src.vive_encoder import ViveEncoder
+from src.vive_blobber import ViveBlobber
+from src.vive_augmentor import ViveAugmentor
 
 class Processor:
 

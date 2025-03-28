@@ -73,8 +73,7 @@ class ViveAugmentor:
 if __name__ == "__main__":
 
     import matplotlib.pyplot as plt
-    from vive_augmentor import ViveAugmentor
-    from vive_decoder import ViveDecoder
+    from src.vive_decoder import ViveDecoder
     
     def visualize_devices(decoded_data):
         """
