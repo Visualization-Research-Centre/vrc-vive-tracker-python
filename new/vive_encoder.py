@@ -5,50 +5,63 @@ class ViveEncoder:
         self.vive_trackers = []
         self.blobs = []
         self.label = 2222
-    
+
     def return_byte_data(self):
         # Create byte data
         byte_data = bytearray()
-        
-        # Add label
-        byte_data.extend(self.label.to_bytes(2, 'little'))
-        
-        print('length of byte_data:', len(byte_data))
-        # Add number of devices
-        # num_devices = len(self.vive_trackers)
-        # byte_data.extend(num_devices.to_bytes(1, 'little'))
-        byte_data.append(len(self.vive_trackers))
-        # print('length of byte_data:', len(byte_data))
-        # print('byte_data:', byte_data)
+
+        # Add label (2 bytes, little-endian)
+        byte_data.extend(struct.pack('<H', self.label))
+
+        # Add number of devices (1 byte)
+        byte_data.extend(struct.pack('<B', len(self.vive_trackers)))
 
         # Add device data
         for device in self.vive_trackers:
+            # Encode name (as bytes, followed by a null terminator for safety)
             byte_data.extend(device['name'].encode('utf-8'))
-            byte_data.append(device['device_class'])
-            byte_data.append(int(device['battery'] * 100))
-            byte_data.append(1 if device['status'] else 0)
-            byte_data.append(1 if device['is_tracked'] else 0)
 
+            # Encode device class (1 byte)
+            byte_data.extend(struct.pack('<B', device['device_class']))
+
+            # Encode battery percentage (1 byte, scaled to 0-100)
+            byte_data.extend(struct.pack('<B', int(device['battery'] * 100)))
+
+            # Encode status and tracking flags (1 byte each)
+            byte_data.extend(struct.pack('<B', 1 if device['status'] else 0))
+            byte_data.extend(struct.pack('<B', 1 if device['is_tracked'] else 0))
+
+            # Encode position (3 floats, 4 bytes each)
             for pos in device['position']:
                 byte_data.extend(struct.pack('<f', pos))
+
+            # Encode rotation (4 floats, 4 bytes each)
             for rot in device['rotation']:
                 byte_data.extend(struct.pack('<f', rot))
 
-            if device['device_class'] == 2:
-                byte_data.extend(device['ul_button_pressed'].to_bytes(8, 'little'))
-                for axis in range(5):
-                    byte_data.extend(struct.pack('<f', device[f'r_axis{axis}'][0]))
-                    byte_data.extend(struct.pack('<f', device[f'r_axis{axis}'][1]))
+            ## TODO device class 2 not tested
+            # # Encode additional data for device class 2
+            # if device['device_class'] == 2:
+            #     # Encode button pressed (8 bytes)
+            #     byte_data.extend(struct.pack('<Q', device['ul_button_pressed']))
 
-        # Add number of blobs
-        byte_data.append(len(self.blobs))
+            #     # Encode axes data (5 axes, each with 2 floats)
+            #     for axis in range(5):
+            #         byte_data.extend(struct.pack('<ff', *device[f'r_axis{axis}']))
+
+        # Add number of blobs (1 byte)
+        byte_data.extend(struct.pack('<B', len(self.blobs)))
 
         # Add blob data
         for blob in self.blobs:
+            # Encode name (as bytes, followed by a null terminator for safety)
             byte_data.extend(blob['name'].encode('utf-8'))
 
+            # Encode position (3 floats, 4 bytes each)
             for pos in blob['position']:
                 byte_data.extend(struct.pack('<f', pos))
+
+            # Encode weight (1 float, 4 bytes)
             byte_data.extend(struct.pack('<f', blob['weight']))
 
         return bytes(byte_data)
