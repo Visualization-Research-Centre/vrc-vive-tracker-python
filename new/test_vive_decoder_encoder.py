@@ -40,10 +40,10 @@ if __name__ == "__main__":
 
     # encode the data
     encoder = ViveEncoder()
-    encoder.set_vive_trackers(vive_trackers)
+    encoder.vive_trackers = vive_trackers
     encoded_data = encoder.return_byte_data()
     
-    assert vive_trackers == encoder.get_vive_trackers(), "Data is not equal to vr_tracker_devices"
+    assert vive_trackers == encoder.vive_trackers, "Data is not equal to vr_tracker_devices"
     print('\nTest 1 passed!')
     
     # decode the data
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     print('\nTest 2 passed!')
 
     # encode the decoded data again and compare with the original encoded data
-    encoder.set_vive_trackers(decoded_data)
+    encoder.vive_trackers = decoded_data 
     assert encoded_data == encoder.return_byte_data()
     print('\nTest 3 passed!')
 
@@ -103,7 +103,7 @@ if __name__ == "__main__":
     # print('\ndecoded_data:', decoded_data)
 
     # encode the decoded data
-    encoder.set_vive_trackers(decoded_data)
+    encoder.vive_trackers = decoded_data
     encoded_data = encoder.return_byte_data()
     # print('\nencoded_data:\n', encoded_data)
 
@@ -152,7 +152,7 @@ if __name__ == "__main__":
 
     # encode the blobs
     encoder = ViveEncoder()
-    encoder.set_blobs(blobs)
+    encoder.blobs = blobs
     encoded_data = encoder.return_byte_data()
 
     # decode the blobs
@@ -165,7 +165,7 @@ if __name__ == "__main__":
     assert decoded_blobs == blobs, "Decoded blobs are not equal to blobs"
 
     # add trackers and blobs
-    encoder.set_vive_trackers(vive_trackers)
+    encoder.vive_trackers = vive_trackers
     encoded_data = encoder.return_byte_data()
 
     decoder = ViveDecoder()
