@@ -24,6 +24,7 @@ class App(tk.Tk):
         self.receiver_port = 2223
         self.sender_ip = '127.0.0.1'
         self.sender_port = 2224
+        self.ignore_vive_tracker_names = ['2B9219E9', 'FD0C50D1']
 
         # app variables
         self.file_path = None
@@ -105,8 +106,6 @@ class App(tk.Tk):
         self.connect_var = tk.IntVar()
         self.connect_checkbox = ttk.Checkbutton(input_frame, variable=self.connect_var, command=self.handle_connect_checkbox)
         self.connect_checkbox.grid(row=4, column=1, padx=5, pady=5, sticky="w")
-        # disable the connect checkbox for now
-        self.connect_checkbox.config(state=tk.DISABLED)
 
 
         # Controls frame
@@ -119,11 +118,8 @@ class App(tk.Tk):
         self.save_data_label = ttk.Label(button_frame, text="No data loaded.")
         self.save_data_label.grid(row=0, column=1, padx=5, pady=5, sticky="w")
 
-        self.btn_start = ttk.Button(button_frame, text="Start Recording", command=self.start_recording)
-        self.btn_start.grid(row=1, column=0, padx=5, pady=5, sticky="w")
-
-        self.btn_stop = ttk.Button(button_frame, text="Stop Recording", command=self.stop_recording, state=tk.DISABLED)
-        self.btn_stop.grid(row=1, column=1, padx=5, pady=5, sticky="w")
+        self.btn_record = ttk.Button(button_frame, text="Record", command=self.handle_recording)
+        self.btn_record.grid(row=1, column=0, padx=5, pady=5, sticky="w")
 
         self.btn_load = ttk.Button(button_frame, text="Load Data", command=self.load_data)
         self.btn_load.grid(row=2, column=0, padx=5, pady=5, sticky="w")
@@ -131,11 +127,9 @@ class App(tk.Tk):
         self.load_data_label = ttk.Label(button_frame, text="No data loaded.")
         self.load_data_label.grid(row=2, column=1, padx=5, pady=5, sticky="w")
 
-        self.btn_play = ttk.Button(button_frame, text="Play Data", command=self.play_data, state=tk.DISABLED)
+        self.btn_play = ttk.Button(button_frame, text="Play Data", command=self.handle_process_button)
         self.btn_play.grid(row=3, column=0, padx=5, pady=5, sticky="w")
-
-        self.btn_stop_play = ttk.Button(button_frame, text="Stop Playback", command=self.stop_playback, state=tk.DISABLED)
-        self.btn_stop_play.grid(row=3, column=1, padx=5, pady=5, sticky="w")
+        
         
         
         # Process frame
@@ -165,17 +159,14 @@ class App(tk.Tk):
         self.compute_blobs_slider.set(10)
         self.compute_blobs_slider.bind("<ButtonRelease-1>", self.update_compute_blobs_slider)
         self.compute_blobs_slider.bind("<Motion>", self.update_compute_blobs_slider)
-
-
-        self.process_button = ttk.Button(process_frame, text="Process Data", command=self.process_data)
-        self.process_button.grid(row=4, column=0, padx=5, pady=5, sticky="w")
-
-        self.process_stop_button = ttk.Button(process_frame, text="Stop Processing", command=self.stop_processing)
-        self.process_stop_button.grid(row=4, column=1, padx=5, pady=5, sticky="w")
-
-        self.proccess_src_var = tk.IntVar()
-        self.process_src_checkbox = ttk.Checkbutton(process_frame, text="From File?", variable=self.proccess_src_var)
-        self.process_src_checkbox.grid(row=5, column=0, padx=5, pady=5, sticky="w")
+        
+        self.bypass_processor_var = tk.IntVar()
+        self.bypass_processor_checkbox = ttk.Checkbutton(process_frame, text="Use orignal data?", variable=self.bypass_processor_var)
+        self.bypass_processor_checkbox.grid(row=6, column=0, padx=5, pady=5, sticky="w")
+        
+        self.ignore_vive_tracker_names_var = tk.IntVar()
+        self.ignore_vive_tracker_names_checkbox = ttk.Checkbutton(process_frame, text="Ignore Vive Tracker Names?", variable=self.ignore_vive_tracker_names_var)
+        self.ignore_vive_tracker_names_checkbox.grid(row=7, column=0, padx=5, pady=5, sticky="w")
 
 
         # fill the empty space
@@ -192,9 +183,12 @@ class App(tk.Tk):
         self.receiver_port = int(self.receiver_port_entry.get())
         self.sender_ip = self.sender_ip_entry.get()
         self.sender_port = int(self.sender_port_entry.get())
-        self.augment_slider_value = int(self.augment_slider.get())
-        self.compute_blobs_slider_value = self.compute_blobs_slider.get() / 10
-        self.from_file = self.proccess_src_var.get()
+        # self.from_file = self.proccess_src_var.get()
+        self.bypass_processor = self.bypass_processor_var.get()      
+        self.ignore_vive_trackers = self.ignore_vive_tracker_names_var.get()  
+        if self.receiver_ip == '127.0.0.1':
+            self.receiver_ip = ''
+
         
     def update_augment_slider(self, event):
         self.augment_slider_value = int(self.augment_slider.get())
@@ -207,6 +201,14 @@ class App(tk.Tk):
         self.compute_blobs_slider_label.config(text=str(self.compute_blobs_slider_value)[:4]+" m")
         if self.processor:
             self.processor.set_radius(self.compute_blobs_slider_value)
+
+    def exit_gracefully(self):
+        logging.info("Exiting...")
+        try:
+            self.close_all_actors()
+        except Exception as e:
+            logging.error(f"Error while closing actors: {e}")
+        self.destroy()
 
 
     def close_all_actors(self):
@@ -224,9 +226,60 @@ class App(tk.Tk):
             self.src.close()
 
 
+    def update_state(self, new_state):
+
+        self.state = new_state
+
+        # signals
+        is_save_file_path_valid = self.save_file_path is not None
+        is_load_file_path_valid = self.file_path is not None
+    
+        if self.state == self.states[0]: # idle
+            # record
+            self.btn_save.config(state=tk.NORMAL)
+            if is_save_file_path_valid:
+                self.btn_record.config(state=tk.NORMAL)
+            else:
+                self.btn_record.config(state=tk.DISABLED)
+                self.save_data_label.config(text="Please select a save location.")
+            self.btn_record.config(text="Record")
+            
+            # load 
+            self.btn_load.config(state=tk.NORMAL)
+            self.btn_play.config(text="Run")
+            self.btn_play.config(state=tk.NORMAL)
+            if is_load_file_path_valid:
+                self.load_data_label.config(text=self.trim_path(self.file_path))
+            else:
+                self.load_data_label.config(text="No data loaded. Using receiver.")
+        
+        elif self.state == self.states[1]: # recording
+            self.btn_play.config(state=tk.DISABLED)
+            self.btn_save.config(state=tk.DISABLED)
+            self.btn_record.config(text="Stop")
+        
+        elif self.state == self.states[2]: # playing
+            self.btn_load.config(state=tk.DISABLED)
+            self.btn_play.config(text="Stop")
+            self.btn_record.config(state=tk.DISABLED)
+            
+        elif self.state == self.states[3]: # testing
+            pass
+        
+        logging.info(f"State: {self.state}")
+            
+
+
+    def handle_process_button(self):
+        if self.state == self.states[0]:
+            self.process_data()
+        else:
+            self.stop_processing()
+
     def process_data(self):
         self.update_variables()
         self.close_all_actors()
+        self.disconnect_when_testing()
 
         # start the sender
         self.sender = UDPSenderQ(ip=self.sender_ip, port=self.sender_port)
@@ -244,88 +297,29 @@ class App(tk.Tk):
             self.src.load(self.file_path)
         else:
             self.src = UDPReceiverQ(ip=self.receiver_ip, port=self.receiver_port)
-        
         if not self.src.start():
             messagebox.showerror("Error", "Failed to start source. Check the IP and Port.")
             return
 
         # start the processor
-        logging.info("Processing data with {} augmentations and {}m radius".format(self.augment_slider_value, self.compute_blobs_slider_value))
-        self.processor = Processor(callback_data=self.src.get_data_block, callback=self.sender.update, num_augmentations=self.augment_slider_value, radius=self.compute_blobs_slider_value)
+        self.processor = Processor(callback_data=self.src.get_data_block, callback=self.sender.update, bypass=self.bypass_processor)
+        if self.bypass_processor:
+            logging.info("Bypassing processor.")
+        else:
+            logging.info("Processing data with {} augmentations and {}m radius".format(self.augment_slider_value, self.compute_blobs_slider_value))
+            if self.ignore_vive_trackers:
+                logging.info("Ignoring certain vive tracker names.")
+                self.processor.set_ignore_vive_tracker_names(self.ignore_vive_tracker_names)
         self.processor.start()
 
         # update the state
-        self.update_state("Processing")
+        self.update_state("Playing")
 
 
     def stop_processing(self):
         self.close_all_actors()
         self.update_state("Idle")
 
-
-    def exit_gracefully(self):
-        logging.info("Exiting...")
-        try:
-            self.close_all_actors()
-        except Exception as e:
-            logging.error(f"Error while closing actors: {e}")
-        self.destroy()
-
-
-    def update_state(self, new_state):
-
-        self.state = new_state
-
-        # signals
-        is_save_file_path_valid = self.save_file_path is not None
-        is_load_file_path_valid = self.file_path is not None
-    
-        if self.state == self.states[0]: # idle
-            # save
-            self.btn_save.config(state=tk.NORMAL)
-            if is_save_file_path_valid:
-                self.btn_start.config(state=tk.NORMAL)
-            else:
-                self.btn_start.config(state=tk.DISABLED)
-                self.save_data_label.config(text="Please select a save location.")
-            
-            # load 
-            self.btn_load.config(state=tk.NORMAL)
-            if is_load_file_path_valid:
-                self.btn_play.config(state=tk.NORMAL)
-            else:
-                self.btn_play.config(state=tk.DISABLED)
-                self.load_data_label.config(text="Please select a load location.")
-            
-            # stop buttons: play and record
-            self.btn_stop.config(state=tk.DISABLED)
-            self.btn_stop_play.config(state=tk.DISABLED)
-
-            # disable the connect checkbox for now
-            # self.connect_checkbox.config(state=tk.NORMAL)
-        
-        elif self.state == self.states[1]: # recording
-            self.btn_load.config(state=tk.DISABLED)
-            self.btn_play.config(state=tk.DISABLED)
-            self.btn_start.config(state=tk.DISABLED)
-            self.btn_stop.config(state=tk.NORMAL)
-            self.btn_stop_play.config(state=tk.DISABLED)
-            self.connect_checkbox.config(state=tk.DISABLED)
-        
-        elif self.state == self.states[2]: # playing
-            self.btn_load.config(state=tk.DISABLED)
-            self.btn_play.config(state=tk.DISABLED)
-            self.btn_start.config(state=tk.DISABLED)
-            self.btn_stop.config(state=tk.DISABLED)
-            self.btn_stop_play.config(state=tk.NORMAL)
-            self.connect_checkbox.config(state=tk.DISABLED)
-            
-        elif self.state == self.states[3]: # testing
-            pass
-            
-
-
-    ## TODO ##
 
     def handle_connect_checkbox(self):
         if self.connect_var.get():
@@ -349,21 +343,32 @@ class App(tk.Tk):
         
     def disconnect_test(self):
         logging.info("Disable bypass mode.")
-        self.receiver.close()
-        self.sender.close()
+        if self.receiver:
+            self.receiver.close()
+        if self.sender:
+            self.sender.close()
         self.update_state("Idle")
         
+    def disconnect_when_testing(self):
+        if self.state == self.states[3]:
+            self.disconnect_test()
+        
+        
+    def handle_recording(self):
+        if self.state == self.states[0]:
+            self.start_recording()
+        else:
+            self.stop_recording()
         
     def start_recording(self):
+        self.disconnect_when_testing()
         self.update_variables()
         if self.receiver:
             self.receiver.close()
         if self.sender:
             self.sender.close()
         if self.recorder:
-            self.recorder.close()        
-        if self.receiver_ip == '127.0.0.1':
-            self.receiver_ip = ''
+            self.recorder.close()
         logging.info(f"Starting recording with receiver: {self.receiver_ip}:{self.receiver_port} and sender: {self.sender_ip}:{self.sender_port}")
         self.receiver = UDPReceiverQ(ip=self.receiver_ip, port=self.receiver_port)
         self.sender = UDPSenderQ(ip=self.sender_ip, port=self.sender_port)
@@ -392,27 +397,6 @@ class App(tk.Tk):
         self.update_state("Idle")
         
 
-    def play_data(self):
-        self.update_variables()
-        if self.sender:
-            self.sender.close()
-        self.sender = UDPSenderQ(ip=self.sender_ip, port=self.sender_port)
-        if not self.sender.start():
-            messagebox.showerror("Error", "Failed to start sender. Check the IP and Port.")
-            return
-        self.player.load(self.file_path)
-        self.player.set_callback(self.sender.update)
-        if not self.player.start():
-            messagebox.showerror("Error", "Failed to start player.")
-            self.sender.close()
-            return
-        self.update_state("Playing")
-
-    def stop_playback(self):
-        self.player.stop()
-        self.sender.stop()
-        self.update_state("Idle")
-
     def load_data(self):
         self.file_path = filedialog.askopenfilename()
         if self.file_path:
@@ -423,7 +407,7 @@ class App(tk.Tk):
         else:
             messagebox.showwarning("Warning", "No file selected.")
             self.file_path = None
-        self.update_state("Idle")    
+        self.update_state("Idle")
 
     def save_data_location(self):
         self.save_file_path = filedialog.asksaveasfilename()
@@ -432,7 +416,6 @@ class App(tk.Tk):
                     self.save_file_path += ".bin"
             self.save_data_label.config(text=self.trim_path(self.save_file_path))
         else:
-            messagebox.showwarning("Warning", "No save location selected.")
             self.save_file_path = None
         self.update_state("Idle")
 
@@ -441,6 +424,27 @@ class App(tk.Tk):
             return "..." + path[-50:]
         return path
 
+
+    # def play_data(self):
+    #     self.update_variables()
+    #     if self.sender:
+    #         self.sender.close()
+    #     self.sender = UDPSenderQ(ip=self.sender_ip, port=self.sender_port)
+    #     if not self.sender.start():
+    #         messagebox.showerror("Error", "Failed to start sender. Check the IP and Port.")
+    #         return
+    #     self.player.load(self.file_path)
+    #     self.player.set_callback(self.sender.update)
+    #     if not self.player.start():
+    #         messagebox.showerror("Error", "Failed to start player.")
+    #         self.sender.close()
+    #         return
+    #     self.update_state("Playing")
+
+    # def stop_playback(self):
+    #     self.player.stop()
+    #     self.sender.stop()
+    #     self.update_state("Idle")
 
 
 if __name__ == "__main__":
