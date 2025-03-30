@@ -7,7 +7,7 @@ from src.vive_augmentor import ViveAugmentor
 
 class Processor:
 
-    def __init__(self, callback_data, callback=None, bypass=False):
+    def __init__(self, callback_data, callback=None, bypass=False, debug=False):
         self.callback_data = callback_data
         self.callback = callback
         self.radius = 1
@@ -21,6 +21,7 @@ class Processor:
         self.data = None
         self.bypass = bypass
         self.detect_blobs = True
+        self.debug = debug
     
     def set_radius(self, radius):
         self.blobber.radius = radius
@@ -33,6 +34,9 @@ class Processor:
 
     def set_ignore_vive_tracker_names(self, ignored_vive_tracker_names):
         self.decoder.add_ignored_vive_tracker_names(ignored_vive_tracker_names)
+
+    def set_debug(self, debug):
+        self.debug = debug
 
     def start(self):
         if self.running:
@@ -58,6 +62,7 @@ class Processor:
     
     def process(self):
         # get data
+
         data = self.callback_data()
         
         if data is None:
@@ -77,8 +82,9 @@ class Processor:
             if self.detect_blobs:
                 blobs, tracker_data = self.blobber.process_data(tracker_data)
                 self.encoder.blobs = blobs
-                print("Blobs: ", blobs)
-
+                if self.debug:
+                    logging.info(f"Blobs: {blobs}")
+                
             # encode the data
             self.encoder.vive_trackers = tracker_data
             data = self.encoder.encode()

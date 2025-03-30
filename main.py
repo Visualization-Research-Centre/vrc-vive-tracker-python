@@ -168,6 +168,10 @@ class App(tk.Tk):
         self.ignore_vive_tracker_names_checkbox = ttk.Checkbutton(process_frame, text="Ignore Vive Tracker Names?", variable=self.ignore_vive_tracker_names_var)
         self.ignore_vive_tracker_names_checkbox.grid(row=7, column=0, padx=5, pady=5, sticky="w")
 
+        self.debug_var = tk.IntVar()
+        self.debug_checkbox = ttk.Checkbutton(process_frame, text="Debug Mode", variable=self.debug_var, command=self.handle_debug_checkbox)
+        self.debug_checkbox.grid(row=8, column=0, padx=5, pady=5, sticky="w")
+
 
         # fill the empty space
         self.columnconfigure(0, weight=1)
@@ -186,6 +190,7 @@ class App(tk.Tk):
         # self.from_file = self.proccess_src_var.get()
         self.bypass_processor = self.bypass_processor_var.get()      
         self.ignore_vive_trackers = self.ignore_vive_tracker_names_var.get()  
+        self.debug = self.debug_var.get()
         if self.receiver_ip == '127.0.0.1':
             self.receiver_ip = ''
 
@@ -225,6 +230,16 @@ class App(tk.Tk):
         if self.src:
             self.src.close()
 
+
+    def handle_debug_checkbox(self):
+        if self.debug_var.get():
+            if self.processor:
+                logging.info("Debug mode enabled.")
+                self.processor.set_debug(True)
+        else:
+            if self.processor:
+                logging.info("Debug mode disabled.")
+                self.processor.set_debug(False)
 
     def update_state(self, new_state):
 
@@ -269,7 +284,6 @@ class App(tk.Tk):
         logging.info(f"State: {self.state}")
             
 
-
     def handle_process_button(self):
         if self.state == self.states[2]:
             self.stop_processing()
@@ -289,10 +303,7 @@ class App(tk.Tk):
         
         # select source
         self.src = None
-        if self.from_file:
-            if self.file_path is None:
-                messagebox.showerror("Error", "No file selected.")
-                return
+        if self.file_path:
             self.src = self.player
             self.src.load(self.file_path)
         else:
@@ -302,7 +313,9 @@ class App(tk.Tk):
             return
 
         # start the processor
-        self.processor = Processor(callback_data=self.src.get_data_block, callback=self.sender.update, bypass=self.bypass_processor)
+        self.processor = Processor(callback_data=self.src.get_data_block, callback=self.sender.update, bypass=self.bypass_processor, debug=self.debug)
+        self.processor.set_num_augmentations(self.augment_slider_value)
+        self.processor.set_radius(self.compute_blobs_slider_value)
         if self.bypass_processor:
             logging.info("Bypassing processor.")
         else:
@@ -329,7 +342,8 @@ class App(tk.Tk):
         
     def connect_test(self):
         logging.info("Enable bypass mode.")
-        self.sender = UDPSenderQ(ip=self.sender_ip, port=self.sender_port)
+        self.update_variables()
+        self.sender = UDPSenderQ(ip=self.sender_ip, port=self.sender_port, debug=True)
         self.receiver = UDPReceiverQ(ip=self.receiver_ip, port=self.receiver_port, callback=self.sender.update)
         if not self.receiver.start():
             messagebox.showerror("Error", "Failed to start receiver. Check the IP and Port.")

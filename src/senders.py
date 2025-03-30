@@ -5,7 +5,7 @@ import logging
 import queue
 
 class UDPSenderQ:
-    def __init__(self, ip='127.0.0.1', port=2223):
+    def __init__(self, ip='127.0.0.1', port=2223, debug=False):
         self.ip = ip
         self.port = port
         self.running = False
@@ -13,17 +13,23 @@ class UDPSenderQ:
         self.queue = queue.Queue()
         self.thread = None
         self.lock = threading.Lock()
+        self.debug = debug
         if self.ip.endswith('.255'):
             self.ip = ''
 
     def is_running(self):
         with self.lock:
             return self.running
+        
+    def set_debug(self, debug):
+        self.debug = debug
 
     def send_data(self):
         while self.is_running():
             try:
                 data = self.queue.get(timeout=0.1)
+                if self.debug:
+                    logging.info(f"Sending data: {data}")
                 self.sock.sendto(data, (self.ip, self.port))
             except queue.Empty:
                 continue
@@ -44,7 +50,7 @@ class UDPSenderQ:
             self.running = True
             self.thread = threading.Thread(target=self.send_data, daemon=True)
             self.thread.start()
-            logging.info("Sender started.")
+            logging.info("Sender started on {}:{}".format(self.ip, self.port))
             return True
         except socket.error as e:
             logging.error(f"Socket error: {e}")
