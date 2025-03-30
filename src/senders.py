@@ -15,7 +15,7 @@ class UDPSenderQ:
         self.lock = threading.Lock()
         self.debug = debug
         if self.ip.endswith('.255'):
-            self.ip = ''
+            self.ip = '255.255.255.255'
 
     def is_running(self):
         with self.lock:

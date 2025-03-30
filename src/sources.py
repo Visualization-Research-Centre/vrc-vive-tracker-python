@@ -82,6 +82,8 @@ class UDPReceiverQ(DataSource):
                 self.close()
             try:
                 self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+                self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 self.sock.bind((self.ip, self.port))
                 self.sock.settimeout(.1)
                 logging.info(f"Receiver connected to {self.ip}:{self.port}.")
