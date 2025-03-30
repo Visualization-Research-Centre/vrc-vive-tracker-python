@@ -89,7 +89,6 @@ class UDPReceiverQ(DataSource):
                 return True
             except socket.error as e:
                 logging.error(f"Socket error while connecting: {e}")
-                self.close()
                 return False
 
     def handle_data(self):
