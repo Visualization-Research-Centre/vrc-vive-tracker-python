@@ -33,7 +33,7 @@ class Processor:
         self.detect_blobs = detect_blobs
 
     def set_ignore_vive_tracker_names(self, ignored_vive_tracker_names):
-        self.decoder.add_ignored_vive_tracker_names(ignored_vive_tracker_names)
+        self.decoder.set_ignored_vive_tracker_names(ignored_vive_tracker_names)
 
     def set_debug(self, debug):
         self.debug = debug
@@ -83,8 +83,23 @@ class Processor:
                 blobs, tracker_data = self.blobber.process_data(tracker_data)
                 self.encoder.blobs = blobs
                 if self.debug:
-                    logging.info(f"Blobs: {blobs}")
-                
+                    dbg_str = "Blobs: " 
+                    for blob in blobs:
+                        dbg_str += f"({blob[0][0]:.3f} "
+                        dbg_str += f",{blob[0][1]:.3f} "
+                        dbg_str += f",{blob[1]:.3f})\n"
+                    logging.info(dbg_str)
+
+            
+            if self.debug:
+                dbg_str = "Trackers: "
+                for tracker in tracker_data:
+                    dbg_str += f"{tracker['name']}: "
+                    dbg_str += f"({tracker['position'][0]:.3f} "
+                    dbg_str += f",{tracker['position'][1]:.3f} "
+                    dbg_str += f",{tracker['position'][2]:.3f})\n"
+                logging.info(dbg_str)
+
             # encode the data
             self.encoder.vive_trackers = tracker_data
             data = self.encoder.encode()

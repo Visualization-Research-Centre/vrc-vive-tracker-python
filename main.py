@@ -24,7 +24,7 @@ class App(tk.Tk):
         self.receiver_port = 2223
         self.sender_ip = '127.0.0.1'
         self.sender_port = 2224
-        self.ignore_vive_tracker_names = ['2B9219E9', 'FD0C50D1']
+        self.ignore_vive_tracker_names = ['2B9219E9', 'FD0C50D1', '8992BF03']
 
         # app variables
         self.file_path = None
@@ -104,7 +104,7 @@ class App(tk.Tk):
         self.connect_label.grid(row=4, column=0, padx=5, pady=5, sticky="w")
         
         self.connect_var = tk.IntVar()
-        self.connect_checkbox = tk.Checkbutton(input_frame, variable=self.connect_var, command=self.handle_connect_checkbox)
+        self.connect_checkbox = ttk.Checkbutton(input_frame, variable=self.connect_var, command=self.handle_connect_checkbox)
         self.connect_checkbox.grid(row=4, column=1, padx=5, pady=5, sticky="w")
 
 
@@ -165,12 +165,19 @@ class App(tk.Tk):
         self.bypass_processor_checkbox.grid(row=6, column=0, padx=5, pady=5, sticky="w")
         
         self.ignore_vive_tracker_names_var = tk.IntVar()
-        self.ignore_vive_tracker_names_checkbox = ttk.Checkbutton(process_frame, text="Ignore Vive Tracker Names?", variable=self.ignore_vive_tracker_names_var)
+        self.ignore_vive_tracker_names_checkbox = ttk.Checkbutton(process_frame, text="Ignore Vive Tracker Names?", variable=self.ignore_vive_tracker_names_var, command=self.handle_ignore_vive_trackers)
         self.ignore_vive_tracker_names_checkbox.grid(row=7, column=0, padx=5, pady=5, sticky="w")
+        self.ignore_vive_tracker_names_var.set(1)
+        
+        self.ignore_vive_tracker_names_entry = ttk.Entry(process_frame)
+        self.ignore_vive_tracker_names_entry.grid(row=8, column=0, padx=5, pady=5, sticky="ew")
+        self.ignore_vive_tracker_names_entry.insert(0, ', '.join(self.ignore_vive_tracker_names))
+        #disable the entry
+        self.ignore_vive_tracker_names_entry.config(state=tk.DISABLED)
 
         self.debug_var = tk.IntVar()
         self.debug_checkbox = ttk.Checkbutton(process_frame, text="Debug Mode", variable=self.debug_var, command=self.handle_debug_checkbox)
-        self.debug_checkbox.grid(row=8, column=0, padx=5, pady=5, sticky="w")
+        self.debug_checkbox.grid(row=9, column=0, padx=5, pady=5, sticky="w")
 
 
         # fill the empty space
@@ -240,6 +247,16 @@ class App(tk.Tk):
             if self.processor:
                 logging.info("Debug mode disabled.")
                 self.processor.set_debug(False)
+
+    def handle_ignore_vive_trackers(self):
+        if self.ignore_vive_tracker_names_var.get():
+            logging.info("Ignore Vive Tracker Names enabled.")
+            if self.processor:
+                self.processor.set_ignore_vive_tracker_names(self.ignore_vive_tracker_names)
+        else:
+            logging.info("Ignore Vive Tracker Names disabled.")
+            if self.processor:
+                self.processor.set_ignore_vive_tracker_names([])
 
     def update_state(self, new_state):
 
@@ -358,10 +375,8 @@ class App(tk.Tk):
     def disconnect_test(self):
         logging.info("Disable bypass mode.")
         if self.receiver:
-            logging.info(f"Trying to close receiver: {self.receiver_ip}:{self.receiver_port}")
             self.receiver.close()
         if self.sender:
-            logging.info(f"Trying to close sender: {self.sender_ip}:{self.sender_port}")
             self.sender.close()
         self.update_state("Idle")
         

@@ -10,14 +10,16 @@ class ViveDecoder:
         self.label = 2222
         self.current_timestamp = 0
         
-    def add_ignored_vive_tracker_name(self, vive_tracker_name):
-        name = vive_tracker_name.lower()
-        if name not in self.ignored_vive_tracker_names:
-            self.ignored_vive_tracker_names.append(name)
+    def set_ignored_vive_tracker_names(self, vive_tracker_names):
 
-    def add_ignored_vive_tracker_names(self, vive_tracker_names):
-        for name in vive_tracker_names:
-            self.add_ignored_vive_tracker_name(name)
+        if len(vive_tracker_names) == 0:
+            self.ignored_vive_tracker_names = []
+            return
+
+        for tracker_name in vive_tracker_names:
+            name = tracker_name.lower()
+            if name not in self.ignored_vive_tracker_names:
+                self.ignored_vive_tracker_names.append(name)
     
     def decode(self, byte_data):
         if len(byte_data) <= 2:
