@@ -104,7 +104,7 @@ class App(tk.Tk):
         self.connect_label.grid(row=4, column=0, padx=5, pady=5, sticky="w")
         
         self.connect_var = tk.IntVar()
-        self.connect_checkbox = ttk.Checkbutton(input_frame, variable=self.connect_var, command=self.handle_connect_checkbox)
+        self.connect_checkbox = tk.Checkbutton(input_frame, variable=self.connect_var, command=self.handle_connect_checkbox)
         self.connect_checkbox.grid(row=4, column=1, padx=5, pady=5, sticky="w")
 
 
@@ -271,10 +271,10 @@ class App(tk.Tk):
 
 
     def handle_process_button(self):
-        if self.state == self.states[0]:
-            self.process_data()
-        else:
+        if self.state == self.states[2]:
             self.stop_processing()
+        else:
+            self.process_data()
 
     def process_data(self):
         self.update_variables()
@@ -329,14 +329,14 @@ class App(tk.Tk):
         
     def connect_test(self):
         logging.info("Enable bypass mode.")
-        sender = UDPSenderQ(ip=self.sender_ip, port=self.sender_port)
-        receiver = UDPReceiverQ(ip=self.receiver_ip, port=self.receiver_port, callback=sender.update)
-        if not receiver.start():
+        self.sender = UDPSenderQ(ip=self.sender_ip, port=self.sender_port)
+        self.receiver = UDPReceiverQ(ip=self.receiver_ip, port=self.receiver_port, callback=self.sender.update)
+        if not self.receiver.start():
             messagebox.showerror("Error", "Failed to start receiver. Check the IP and Port.")
             return
-        if not sender.start():
+        if not self.sender.start():
             messagebox.showerror("Error", "Failed to start sender. Check the IP and Port.")
-            receiver.close()
+            self.receiver.close()
             return
         self.update_state("Testing")
         
@@ -344,21 +344,25 @@ class App(tk.Tk):
     def disconnect_test(self):
         logging.info("Disable bypass mode.")
         if self.receiver:
+            logging.info(f"Trying to close receiver: {self.receiver_ip}:{self.receiver_port}")
             self.receiver.close()
         if self.sender:
+            logging.info(f"Trying to close sender: {self.sender_ip}:{self.sender_port}")
             self.sender.close()
         self.update_state("Idle")
         
     def disconnect_when_testing(self):
         if self.state == self.states[3]:
             self.disconnect_test()
+            self.connect_checkbox
+            self.connect_var.set(0)
         
         
     def handle_recording(self):
-        if self.state == self.states[0]:
-            self.start_recording()
-        else:
+        if self.state == self.states[1]:
             self.stop_recording()
+        else:
+            self.start_recording()
         
     def start_recording(self):
         self.disconnect_when_testing()
@@ -389,9 +393,6 @@ class App(tk.Tk):
             
 
     def stop_recording(self):
-        # self.recorder.stop()
-        # self.receiver.close()
-        # self.sender.stop()
         self.close_all_actors()
         self.recorder.save(self.save_file_path)
         self.update_state("Idle")
