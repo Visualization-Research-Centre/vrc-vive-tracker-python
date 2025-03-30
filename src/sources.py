@@ -108,7 +108,7 @@ class UDPReceiverQ(DataSource):
     
     def get_data_block(self):
         try:
-            return self.data_queue.get(timeout=1)
+            return self.data_queue.get(timeout=.1)
         except queue.Empty:
             return None
         
@@ -215,7 +215,7 @@ class Player(DataSource):
 
     def get_data_block(self):
         try:
-            return self.queue.get(timeout=1)
+            return self.queue.get(timeout=.1)
         except queue.Empty:
             return None
 

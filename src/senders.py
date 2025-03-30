@@ -23,7 +23,7 @@ class UDPSenderQ:
     def send_data(self):
         while self.is_running():
             try:
-                data = self.queue.get(timeout=1)
+                data = self.queue.get(timeout=0.1)
                 self.sock.sendto(data, (self.ip, self.port))
             except queue.Empty:
                 continue
