@@ -161,7 +161,7 @@ class App(tk.Tk):
         self.compute_blobs_slider.bind("<Motion>", self.update_compute_blobs_slider)
         
         self.bypass_processor_var = tk.IntVar()
-        self.bypass_processor_checkbox = ttk.Checkbutton(process_frame, text="Use orignal data?", variable=self.bypass_processor_var)
+        self.bypass_processor_checkbox = ttk.Checkbutton(process_frame, text="Bypass processing?", variable=self.bypass_processor_var)
         self.bypass_processor_checkbox.grid(row=6, column=0, padx=5, pady=5, sticky="w")
         
         self.ignore_vive_tracker_names_var = tk.IntVar()
@@ -267,6 +267,7 @@ class App(tk.Tk):
         is_load_file_path_valid = self.file_path is not None
     
         if self.state == self.states[0]: # idle
+            self.connect_checkbox.config(state=tk.NORMAL)
             # record
             self.btn_save.config(state=tk.NORMAL)
             if is_save_file_path_valid:
@@ -289,13 +290,16 @@ class App(tk.Tk):
             self.btn_play.config(state=tk.DISABLED)
             self.btn_save.config(state=tk.DISABLED)
             self.btn_record.config(text="Stop")
+            self.connect_checkbox.config(state=tk.DISABLED)
         
         elif self.state == self.states[2]: # playing
             self.btn_load.config(state=tk.DISABLED)
             self.btn_play.config(text="Stop")
             self.btn_record.config(state=tk.DISABLED)
+            self.connect_checkbox.config(state=tk.DISABLED)
             
-        elif self.state == self.states[3]: # testing
+        elif self.state == self.states[3]: # testing            
+            self.connect_checkbox.config(state=tk.DISABLED)
             pass
         
         logging.info(f"State: {self.state}")
