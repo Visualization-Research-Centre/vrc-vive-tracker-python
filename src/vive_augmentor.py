@@ -46,7 +46,8 @@ class ViveAugmentor:
                 device['name'] = self.fake_tracker_names[i]  # Assign a unique name from the list
 
                 # Get the original x, y values
-                x, y = device['position'][0], device['position'][1]
+                # NOTE: in unity the second axis is the height
+                x, y = device['position'][0], device['position'][2]
 
                 # Calculate a unique rotation angle based on the augmentation index
                 angle = (2 * math.pi / (slider_value - num_devices)) * (i + 1)  # Shift by 1 to avoid zero angle
@@ -61,8 +62,9 @@ class ViveAugmentor:
                 # assert new_x != x or new_y != y, "Augmented device has the same position as the original device"
 
                 # Update the device's position
+                # NOTE: in unity the second axis is the height
                 device['position'][0] = new_x
-                device['position'][1] = new_y
+                device['position'][2] = new_y
 
                 # Append the augmented device to the list
                 decoded_augm_data.append(device)
