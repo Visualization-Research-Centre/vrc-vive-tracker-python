@@ -32,7 +32,6 @@ class App(tk.Tk):
         self.compute_blobs = 0
         self.augment_slider_value = 0
         self.compute_blobs_slider_value = 0
-        self.augment_data = True
         
         # actors
         self.recorder = None
@@ -199,7 +198,6 @@ class App(tk.Tk):
         self.receiver_port = int(self.receiver_port_entry.get())
         self.sender_ip = self.sender_ip_entry.get()
         self.sender_port = int(self.sender_port_entry.get())
-        # self.from_file = self.proccess_src_var.get()
         self.bypass_processor = self.bypass_processor_var.get()      
         self.ignore_vive_trackers = self.ignore_vive_tracker_names_var.get()  
         self.debug = self.debug_var.get()
@@ -323,12 +321,10 @@ class App(tk.Tk):
 
     def handle_augment_checkbox(self):
         if self.augment_var.get():
-            self.augment_data = True
             if self.processor:
                 logging.info("Augmentation enabled.")
                 self.processor.set_augment_data(True)
         else:
-            self.augment_data = False
             if self.processor:
                 logging.info("Augmentation disabled.")
                 self.processor.set_augment_data(False)
@@ -372,9 +368,12 @@ class App(tk.Tk):
             if self.ignore_vive_trackers:
                 logging.info("Ignoring certain vive tracker names.")
                 self.processor.set_ignore_vive_tracker_names(self.ignore_vive_tracker_names)
-            elif self.augment_data:
+            if self.augment_var.get():
                 logging.info("Augmenting data.")
                 self.processor.set_augment_data(True)
+            else:
+                logging.info("Not augmenting data.")
+                self.processor.set_augment_data(False)
         self.processor.start()
 
         # update the state
