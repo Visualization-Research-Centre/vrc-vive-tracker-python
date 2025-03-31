@@ -22,12 +22,16 @@ class Processor:
         self.bypass = bypass
         self.detect_blobs = True
         self.debug = debug
+        self.augment_data = True
     
     def set_radius(self, radius):
         self.blobber.radius = radius
 
     def set_num_augmentations(self, num_augmentations):
         self.num_augmentations = num_augmentations
+
+    def set_augment_data(self, augment_data):
+        self.augment_data = augment_data
 
     def set_detect_blobs(self, detect_blobs):
         self.detect_blobs = detect_blobs
@@ -76,7 +80,8 @@ class Processor:
             tracker_data = self.decoder.vive_trackers
 
             # augment the data
-            tracker_data = self.augmentor.augment(tracker_data, self.num_augmentations)
+            if self.augment_data:
+                tracker_data = self.augmentor.augment(tracker_data, self.num_augmentations)
 
             if tracker_data is None:
                 logging.warning("No devices found in the decoded data.")

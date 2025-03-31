@@ -32,7 +32,7 @@ class App(tk.Tk):
         self.compute_blobs = 0
         self.augment_slider_value = 0
         self.compute_blobs_slider_value = 0
-        self.from_file = False
+        self.augment_data = True
         
         # actors
         self.recorder = None
@@ -138,6 +138,11 @@ class App(tk.Tk):
         
         self.augemnt_label = ttk.Label(process_frame, text="Augment Data:")
         self.augemnt_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+
+        self.augment_var = tk.IntVar()
+        self.augment_checkbox = ttk.Checkbutton(process_frame, variable=self.augment_var, command=self.handle_augment_checkbox)
+        self.augment_checkbox.grid(row=0, column=1, padx=5, pady=5, sticky="w")
+        self.augment_var.set(1)
         
         self.augment_slider = ttk.Scale(process_frame, from_=1, to=20, orient=tk.HORIZONTAL)
         self.augment_slider.grid(row=1, column=0, padx=5, pady=5, sticky="w")
@@ -305,6 +310,18 @@ class App(tk.Tk):
         logging.info(f"State: {self.state}")
             
 
+    def handle_augment_checkbox(self):
+        if self.augment_var.get():
+            self.augment_data = True
+            if self.processor:
+                logging.info("Augmentation enabled.")
+                self.processor.set_augment_data(True)
+        else:
+            self.augment_data = False
+            if self.processor:
+                logging.info("Augmentation disabled.")
+                self.processor.set_augment_data(False)
+
     def handle_process_button(self):
         if self.state == self.states[2]:
             self.stop_processing()
@@ -344,6 +361,9 @@ class App(tk.Tk):
             if self.ignore_vive_trackers:
                 logging.info("Ignoring certain vive tracker names.")
                 self.processor.set_ignore_vive_tracker_names(self.ignore_vive_tracker_names)
+            elif self.augment_data:
+                logging.info("Augmenting data.")
+                self.processor.set_augment_data(True)
         self.processor.start()
 
         # update the state
