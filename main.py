@@ -21,7 +21,7 @@ class App(tk.Tk):
 
         # default network settings
         self.receiver_ip = '127.0.0.1'
-        self.receiver_port = 2223
+        self.receiver_port = 2222
         self.sender_ip = '127.0.0.1'
         self.sender_port = 2224
         self.ignore_vive_tracker_names = ['2B9219E9', '8992BF03']
@@ -165,9 +165,6 @@ class App(tk.Tk):
         self.compute_blobs_slider.bind("<ButtonRelease-1>", self.update_compute_blobs_slider)
         self.compute_blobs_slider.bind("<Motion>", self.update_compute_blobs_slider)
         
-        self.bypass_processor_var = tk.IntVar()
-        self.bypass_processor_checkbox = ttk.Checkbutton(process_frame, text="Bypass processing?", variable=self.bypass_processor_var)
-        self.bypass_processor_checkbox.grid(row=6, column=0, padx=5, pady=5, sticky="w")
         
         self.ignore_vive_tracker_names_var = tk.IntVar()
         self.ignore_vive_tracker_names_checkbox = ttk.Checkbutton(process_frame, text="Ignore Vive Tracker Names?", variable=self.ignore_vive_tracker_names_var, command=self.handle_ignore_vive_trackers)
@@ -177,12 +174,15 @@ class App(tk.Tk):
         self.ignore_vive_tracker_names_entry = ttk.Entry(process_frame)
         self.ignore_vive_tracker_names_entry.grid(row=8, column=0, padx=5, pady=5, sticky="ew")
         self.ignore_vive_tracker_names_entry.insert(0, ', '.join(self.ignore_vive_tracker_names))
-        #disable the entry
-        self.ignore_vive_tracker_names_entry.config(state=tk.DISABLED)
+        self.ignore_vive_tracker_names_entry.bind("<Return>", self.update_ignore_vive_tracker_names)
 
         self.debug_var = tk.IntVar()
         self.debug_checkbox = ttk.Checkbutton(process_frame, text="Debug Mode", variable=self.debug_var, command=self.handle_debug_checkbox)
         self.debug_checkbox.grid(row=9, column=0, padx=5, pady=5, sticky="w")
+        
+        self.bypass_processor_var = tk.IntVar()
+        self.bypass_processor_checkbox = ttk.Checkbutton(process_frame, text="Bypass processing?", variable=self.bypass_processor_var)
+        self.bypass_processor_checkbox.grid(row=9, column=1, padx=5, pady=5, sticky="w")
 
 
         # fill the empty space
@@ -309,6 +309,17 @@ class App(tk.Tk):
         
         logging.info(f"State: {self.state}")
             
+
+    def update_ignore_vive_tracker_names(self, event):
+        if self.ignore_vive_tracker_names_entry.get():
+            self.ignore_vive_tracker_names = [name.strip() for name in self.ignore_vive_tracker_names_entry.get().split(',')]
+            logging.info(f"Ignoring Vive Tracker Names: {self.ignore_vive_tracker_names}")
+            if self.processor:
+                self.processor.set_ignore_vive_tracker_names(self.ignore_vive_tracker_names)
+        else:
+            logging.info("No Vive Tracker Names to ignore.")
+            if self.processor:
+                self.processor.set_ignore_vive_tracker_names([])
 
     def handle_augment_checkbox(self):
         if self.augment_var.get():
