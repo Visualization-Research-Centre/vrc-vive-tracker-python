@@ -78,6 +78,10 @@ class Processor:
             # augment the data
             tracker_data = self.augmentor.augment(tracker_data, self.num_augmentations)
 
+            if tracker_data is None:
+                logging.warning("No devices found in the decoded data.")
+                return None                
+
             # detect the blobs
             if self.detect_blobs:
                 blobs, tracker_data = self.blobber.process_data(tracker_data)

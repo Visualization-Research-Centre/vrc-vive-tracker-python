@@ -29,7 +29,9 @@ class ViveAugmentor:
     def augment(self, decoded_data, slider_value):
         # process data
         num_devices = len(decoded_data)
-        # print('num_devices:', num_devices)
+
+        if num_devices == 0:
+            return None
 
         if num_devices == slider_value:
             # No augmentation needed
