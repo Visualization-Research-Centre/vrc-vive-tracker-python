@@ -24,7 +24,7 @@ class App(tk.Tk):
         self.receiver_port = 2223
         self.sender_ip = '127.0.0.1'
         self.sender_port = 2224
-        self.ignore_vive_tracker_names = ['2B9219E9', 'FD0C50D1', '8992BF03']
+        self.ignore_vive_tracker_names = ['2B9219E9', 'FD0C50D1']
 
         # app variables
         self.file_path = None
