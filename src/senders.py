@@ -6,7 +6,6 @@ import queue
 
 class UDPSenderQ:
     def __init__(self, ip='127.0.0.1', port=2223, debug=False):
-        self.ip = ip
         self.port = port
         self.running = False
         self.sock = None
@@ -14,8 +13,15 @@ class UDPSenderQ:
         self.thread = None
         self.lock = threading.Lock()
         self.debug = debug
-        if self.ip.endswith('.255'):
-            self.ip = '255.255.255.255'
+        if type(ip) is str:
+            if ip == 'broadcast' or ip.endswith('.255'):
+                self.ip = ['<broadcast>']
+            else:
+                self.ip = [ip]
+        elif type(ip) is list:
+            self.ip = ip
+        else:
+            raise ValueError("Invalid IP address format.")
 
     def is_running(self):
         with self.lock:
@@ -30,7 +36,8 @@ class UDPSenderQ:
                 data = self.queue.get(timeout=0.1)
                 if self.debug:
                     logging.info(f"Sending data: {data}")
-                self.sock.sendto(data, (self.ip, self.port))
+                for ip in self.ip:
+                    self.sock.sendto(data, (ip, self.port))
             except queue.Empty:
                 continue
             except socket.error as e:

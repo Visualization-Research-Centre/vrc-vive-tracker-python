@@ -23,8 +23,17 @@ class App(tk.Tk):
         self.receiver_ip = '127.0.0.1'
         self.receiver_port = 2222
         self.sender_ip = '127.0.0.1'
-        self.sender_port = 2224
-        self.ignore_vive_tracker_names = ['2B9219E9', '8992BF03']
+        self.sender_ip_list = [
+            '192.168.50.200',
+            '192.168.50.201',
+            '192.168.50.202',
+            '192.168.50.203',
+            '192.168.50.204',
+            '192.168.50.205'
+        ]
+        self.sender_port = 2223
+        self.ignore_vive_tracker_names = ['2B9219E9']
+        
 
         # app variables
         self.file_path = None
@@ -97,6 +106,10 @@ class App(tk.Tk):
         self.sender_port_entry = ttk.Entry(input_frame)
         self.sender_port_entry.grid(row=3, column=1, padx=5, pady=5, sticky="ew")
         self.sender_port_entry.insert(0, self.sender_port)
+        
+        self.sender_use_list_var = tk.IntVar()
+        self.sender_use_list_checkbox = ttk.Checkbutton(input_frame, text="Use Sender list?", variable=self.sender_use_list_var, command=self.handle_sender_use_list)
+        self.sender_use_list_checkbox.grid(row=3, column=2, padx=5, pady=5, sticky="w")
         
         # Test Connection
         self.connect_label = ttk.Label(input_frame, text="Test Connection")
@@ -196,7 +209,7 @@ class App(tk.Tk):
     def update_variables(self):
         self.receiver_ip = self.receiver_ip_entry.get()
         self.receiver_port = int(self.receiver_port_entry.get())
-        self.sender_ip = self.sender_ip_entry.get()
+        self.handle_sender_use_list()
         self.sender_port = int(self.sender_port_entry.get())
         self.bypass_processor = self.bypass_processor_var.get()      
         self.ignore_vive_trackers = self.ignore_vive_tracker_names_var.get()  
@@ -334,6 +347,14 @@ class App(tk.Tk):
             self.stop_processing()
         else:
             self.process_data()
+            
+    def handle_sender_use_list(self):
+        if self.sender_use_list_var.get():
+            self.sender_ip = self.sender_ip_list
+            logging.info(f"Using sender list: {self.sender_ip}")
+        else:
+            self.sender_ip = self.sender_ip_entry.get()
+            logging.info(f"Using sender IP: {self.sender_ip}")
 
     def process_data(self):
         self.update_variables()
