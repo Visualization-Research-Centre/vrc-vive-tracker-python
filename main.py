@@ -189,6 +189,7 @@ class App(tk.Tk):
         self.ignore_vive_tracker_names_entry.grid(row=8, column=0, padx=5, pady=5, sticky="ew")
         self.ignore_vive_tracker_names_entry.insert(0, ', '.join(self.ignore_vive_tracker_names))
         self.ignore_vive_tracker_names_entry.bind("<Return>", self.update_ignore_vive_tracker_names)
+        self.ignore_vive_tracker_names_entry.bind("<FocusOut>", self.update_ignore_vive_tracker_names)
 
         self.debug_var = tk.IntVar()
         self.debug_checkbox = ttk.Checkbutton(process_frame, text="Debug Mode", variable=self.debug_var, command=self.handle_debug_checkbox)
@@ -283,8 +284,10 @@ class App(tk.Tk):
         # signals
         is_save_file_path_valid = self.save_file_path is not None
         is_load_file_path_valid = self.file_path is not None
+        is_testing = self.connect_var.get()
     
         if self.state == self.states[0]: # idle
+                
             self.connect_checkbox.config(state=tk.NORMAL)
             # record
             self.btn_save.config(state=tk.NORMAL)
@@ -316,8 +319,7 @@ class App(tk.Tk):
             self.btn_record.config(state=tk.DISABLED)
             self.connect_checkbox.config(state=tk.DISABLED)
             
-        elif self.state == self.states[3]: # testing            
-            self.connect_checkbox.config(state=tk.DISABLED)
+        if self.state == self.states[3]: # testing            
             pass
         
         logging.info(f"State: {self.state}")
@@ -438,10 +440,8 @@ class App(tk.Tk):
         self.update_state("Idle")
         
     def disconnect_when_testing(self):
-        if self.state == self.states[3]:
-            self.disconnect_test()
-            self.connect_checkbox
-            self.connect_var.set(0)
+        self.disconnect_test()
+        self.connect_var.set(0)
         
         
     def handle_recording(self):
@@ -494,7 +494,6 @@ class App(tk.Tk):
         else:
             messagebox.showwarning("Warning", "No file selected.")
             self.file_path = None
-        self.update_state("Idle")
 
     def save_data_location(self):
         self.save_file_path = filedialog.asksaveasfilename()
@@ -504,7 +503,6 @@ class App(tk.Tk):
             self.save_data_label.config(text=self.trim_path(self.save_file_path))
         else:
             self.save_file_path = None
-        self.update_state("Idle")
 
     def trim_path(self, path):
         if len(path) > 50:
