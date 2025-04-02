@@ -60,33 +60,31 @@ class ViveDecoder:
                 }
 
                 ## TODO device class 2 not tested
-                # if device_class == 2:
-                #     vr_tracker_device['ul_button_pressed'] = int.from_bytes(byte_data[index + 40:index + 48], 'little')
-                #     vr_tracker_device['r_axis0'] = [
-                #         struct.unpack('<f', byte_data[index + 48:index + 52])[0],
-                #         struct.unpack('<f', byte_data[index + 52:index + 56])[0]
-                #     ]
-                #     vr_tracker_device['r_axis1'] = [
-                #         struct.unpack('<f', byte_data[index + 56:index + 60])[0],
-                #         struct.unpack('<f', byte_data[index + 60:index + 64])[0]
-                #     ]
-                #     vr_tracker_device['r_axis2'] = [
-                #         struct.unpack('<f', byte_data[index + 64:index + 68])[0],
-                #         struct.unpack('<f', byte_data[index + 68:index + 72])[0]
-                #     ]
-                #     vr_tracker_device['r_axis3'] = [
-                #         struct.unpack('<f', byte_data[index + 72:index + 76])[0],
-                #         struct.unpack('<f', byte_data[index + 76:index + 80])[0]
-                #     ]
-                #     vr_tracker_device['r_axis4'] = [
-                #         struct.unpack('<f', byte_data[index + 80:index + 84])[0],
-                #         struct.unpack('<f', byte_data[index + 84:index + 88])[0]
-                #     ]
-                #     index += 88
-                # else:
-                #     index += 40
-
-                index += 40
+                if device_class == 2:
+                    vr_tracker_device['ul_button_pressed'] = int.from_bytes(byte_data[index + 40:index + 48], 'little')
+                    vr_tracker_device['r_axis0'] = [
+                        struct.unpack('<f', byte_data[index + 48:index + 52])[0],
+                        struct.unpack('<f', byte_data[index + 52:index + 56])[0]
+                    ]
+                    vr_tracker_device['r_axis1'] = [
+                        struct.unpack('<f', byte_data[index + 56:index + 60])[0],
+                        struct.unpack('<f', byte_data[index + 60:index + 64])[0]
+                    ]
+                    vr_tracker_device['r_axis2'] = [
+                        struct.unpack('<f', byte_data[index + 64:index + 68])[0],
+                        struct.unpack('<f', byte_data[index + 68:index + 72])[0]
+                    ]
+                    vr_tracker_device['r_axis3'] = [
+                        struct.unpack('<f', byte_data[index + 72:index + 76])[0],
+                        struct.unpack('<f', byte_data[index + 76:index + 80])[0]
+                    ]
+                    vr_tracker_device['r_axis4'] = [
+                        struct.unpack('<f', byte_data[index + 80:index + 84])[0],
+                        struct.unpack('<f', byte_data[index + 84:index + 88])[0]
+                    ]
+                    index += 88
+                else:
+                    index += 40
 
                 can_add_tracker_device = True
                 if self.ignore_tracking_reference:
