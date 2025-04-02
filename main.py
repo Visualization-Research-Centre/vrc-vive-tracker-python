@@ -21,7 +21,7 @@ class App(tk.Tk):
 
         # default network settings
         self.receiver_ip = '127.0.0.1'
-        self.receiver_port = 2222
+        self.receiver_port = 2221
         self.sender_ip = '127.0.0.1'
         self.sender_ip_list = [
             '192.168.50.200',
@@ -29,7 +29,9 @@ class App(tk.Tk):
             '192.168.50.202',
             '192.168.50.203',
             '192.168.50.204',
-            '192.168.50.205'
+            '192.168.50.205',
+            '192.168.50.206',
+            '192.168.50.195'
         ]
         self.sender_port = 2223
         self.ignore_vive_tracker_names = ['2B9219E9']
