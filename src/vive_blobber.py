@@ -68,7 +68,10 @@ class ViveBlobber:
         """
         positions = []
         for tracker in vr_tracker_data:
-            positions.append(tracker["position"][:2])  # Use only x, y for blob detection
+            # Use only x, z for blob detection
+            x = tracker["position"][0]
+            z = tracker["position"][2]
+            positions.append((x, z))
 
         # Get blobs and blob indices
         blobs, blob_indices = self.get_blobs(positions)
