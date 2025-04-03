@@ -72,6 +72,9 @@ class Processor:
         if data is None:
             return
         
+        if self.debug:
+            logging.info(f"Got: {len(data)} bytes")
+        
         if not self.bypass:
             # to avoid freezing the UI we use a timeout on the queue get which can lead to None data
             
@@ -85,37 +88,47 @@ class Processor:
 
             if tracker_data is None:
                 logging.warning("No devices found in the decoded data.")
-                return None                
+                return None
+            
 
             # detect the blobs
             if self.detect_blobs:
                 blobs, tracker_data = self.blobber.process_data(tracker_data)
                 self.encoder.blobs = blobs
                 if self.debug:
-                    dbg_str = "Blobs: " 
-                    for blob in blobs:
-                        dbg_str += f"({blob[0][0]:.3f} "
-                        dbg_str += f",{blob[0][1]:.3f} "
-                        dbg_str += f",{blob[1]:.3f})\n"
+                    dbg_str = "Blobs:\n" 
+                    for i,blob in enumerate(blobs):
+                        dbg_str += f"\tID {i}:({blob[0][0]:.2f} "
+                        dbg_str += f",{blob[0][1]:.2f} "
+                        dbg_str += f",{blob[1]:.2f})\n"
                     logging.info(dbg_str)
-
-            
+                    
             if self.debug:
-                dbg_str = "Trackers: "
+                dbg_str = "Trackers:\n"
                 for tracker in tracker_data:
-                    dbg_str += f"{tracker['name']}: "
-                    dbg_str += f"({tracker['position'][0]:.3f} "
-                    dbg_str += f",{tracker['position'][1]:.3f} "
-                    dbg_str += f",{tracker['position'][2]:.3f})\n"
+                    dbg_str += f"\t{tracker['name']} #{tracker['device_class']}: "
+                    if tracker['is_tracked']:
+                        dbg_str += " o "
+                    else:
+                        dbg_str += " x "
+                    if tracker['blob_id'] is not None:
+                        dbg_str += f"blob: {tracker['blob_id']} "
+                    dbg_str += f"\t({tracker['position'][0]:.2f} "
+                    dbg_str += f",{tracker['position'][1]:.2f} "
+                    dbg_str += f",{tracker['position'][2]:.2f})\n"
                 logging.info(dbg_str)
-
+          
             # encode the data
             self.encoder.vive_trackers = tracker_data
             data = self.encoder.encode()
 
+        if self.debug:
+            logging.info(f"Sent: {len(data)} bytes\n")
+
         # send the data out
         if self.callback:
             self.callback(data)
+            
 
 
     def run(self):
