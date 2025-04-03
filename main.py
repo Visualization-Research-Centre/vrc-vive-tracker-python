@@ -204,7 +204,7 @@ class App(tk.Tk):
         self.visualisation_frame = ttk.LabelFrame(self, text="Visualisation")
         self.visualisation_frame.grid(row=3, column=0, padx=10, sticky="ew")
         
-        self.canvas = tk.Canvas(self.visualisation_frame, width=140, height=140, bg="white")
+        self.canvas = tk.Canvas(self.visualisation_frame, width=280, height=280, bg="white")
         self.canvas.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
         
 
@@ -217,21 +217,30 @@ class App(tk.Tk):
         self.update_compute_blobs_slider(None)
 
 
-    def update_canvas(self, data, color, scale=1):
-        if data:
-            self.canvas.delete("all")
-            for blob in data:
-                x, y = blob[0]*scale, blob[1]*scale
-                # draw a circle
-                r = 3
-                x1 = x - r
-                y1 = y - r
-                x2 = x + r
-                y2 = y + r
-                self.canvas.create_oval(x1, y1, x2, y2, fill=color)
-                
-        else:
-            logging.warning("No data to display.")
+    def update_canvas(self, blobs, trackers):
+        """blobs and tracker are in the range of [-4, 4]"""
+        width = self.canvas.winfo_width()
+        height = self.canvas.winfo_height()
+        self.canvas.delete("all")
+        # draw the blobs
+        for blob in blobs:
+            x, y = blob[0], blob[1]
+            r = blob[2] * 10
+            x = (x + 4) / 8 * width
+            y = height - (y + 4) / 8 * height
+            self.canvas.create_oval(x-r, y-r, x+r, y+r, fill="red", outline="")
+        # draw the trackers
+        for tracker in trackers:
+            x, y = tracker['position'][0], tracker['position'][2]
+            x = (x + 4) / 8 * width
+            y = height - (y + 4) / 8 * height
+            self.canvas.create_oval(x-5, y-5, x+5, y+5, fill="blue", outline="")
+            self.canvas.create_text(x, y-10, text=tracker['name'], fill="black", font=("Arial", 8))
+        # draw the coordinate system
+        self.canvas.create_line(0, height/2, width, height/2, fill="black", dash=(2, 2))
+        self.canvas.create_line(width/2, 0, width/2, height, fill="black", dash=(2, 2))
+        # draw the center
+        self.canvas.create_oval(width/2-5, height/2-5, width/2+5, height/2+5, fill="green", outline="")
 
     def update_variables(self):
         self.receiver_ip = self.receiver_ip_entry.get()
@@ -407,7 +416,7 @@ class App(tk.Tk):
             return
 
         # start the processor
-        self.processor = Processor(callback_data=self.src.get_data_block, callback=self.sender.update, bypass=self.bypass_processor, debug=self.debug)
+        self.processor = Processor(callback_data=self.src.get_data_block, callback=self.sender.update, bypass=self.bypass_processor, debug=self.debug, callback_visualize=self.update_canvas)
         self.processor.set_num_augmentations(self.augment_slider_value)
         self.processor.set_radius(self.compute_blobs_slider_value)
         if self.bypass_processor:

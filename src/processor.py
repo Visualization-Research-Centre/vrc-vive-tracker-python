@@ -7,7 +7,7 @@ from src.vive_augmentor import ViveAugmentor
 
 class Processor:
 
-    def __init__(self, callback_data, callback=None, bypass=False, debug=False):
+    def __init__(self, callback_data, callback=None, bypass=False, debug=False, callback_visualize=None):
         self.callback_data = callback_data
         self.callback = callback
         self.radius = 1
@@ -23,6 +23,7 @@ class Processor:
         self.detect_blobs = True
         self.debug = debug
         self.augment_data = True
+        self.callback_visualize = callback_visualize
     
     def set_radius(self, radius):
         self.blobber.radius = radius
@@ -121,6 +122,8 @@ class Processor:
             # encode the data
             self.encoder.vive_trackers = tracker_data
             data = self.encoder.encode()
+            
+            self.callback_visualize(blobs, tracker_data)
 
         if self.debug:
             logging.info(f"Sent: {len(data)} bytes\n")
