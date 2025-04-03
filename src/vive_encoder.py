@@ -45,13 +45,13 @@ class ViveEncoder:
 
             ## TODO device class 2 not tested
             # # Encode additional data for device class 2
-            # if device['device_class'] == 2:
-            #     # Encode button pressed (8 bytes)
-            #     byte_data.extend(struct.pack('<Q', device['ul_button_pressed']))
+            if device['device_class'] == 2:
+                # Encode button pressed (8 bytes)
+                byte_data.extend(struct.pack('<Q', device['ul_button_pressed']))
 
-            #     # Encode axes data (5 axes, each with 2 floats)
-            #     for axis in range(5):
-            #         byte_data.extend(struct.pack('<ff', *device[f'r_axis{axis}']))
+                # Encode axes data (5 axes, each with 2 floats)
+                for axis in range(5):
+                    byte_data.extend(struct.pack('<ff', *device[f'r_axis{axis}']))
 
         # check if blobs are present
         if self.blobs:
