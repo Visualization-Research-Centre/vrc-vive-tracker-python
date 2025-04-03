@@ -54,8 +54,8 @@ class Processor:
     
     def stop(self):
         self.running = False
-        if self.thread:
-            self.thread.join()
+        # if self.thread:
+        #     self.thread.join()
         logging.info("Processor stopped.")
 
 

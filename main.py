@@ -200,6 +200,14 @@ class App(tk.Tk):
         self.bypass_processor_checkbox.grid(row=9, column=1, padx=5, pady=5, sticky="w")
 
 
+        # Visualisation
+        self.visualisation_frame = ttk.LabelFrame(self, text="Visualisation")
+        self.visualisation_frame.grid(row=3, column=0, padx=10, sticky="ew")
+        
+        self.canvas = tk.Canvas(self.visualisation_frame, width=140, height=140, bg="white")
+        self.canvas.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
+        
+
         # fill the empty space
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
@@ -208,6 +216,22 @@ class App(tk.Tk):
         self.update_augment_slider(None)
         self.update_compute_blobs_slider(None)
 
+
+    def update_canvas(self, data, color, scale=1):
+        if data:
+            self.canvas.delete("all")
+            for blob in data:
+                x, y = blob[0]*scale, blob[1]*scale
+                # draw a circle
+                r = 3
+                x1 = x - r
+                y1 = y - r
+                x2 = x + r
+                y2 = y + r
+                self.canvas.create_oval(x1, y1, x2, y2, fill=color)
+                
+        else:
+            logging.warning("No data to display.")
 
     def update_variables(self):
         self.receiver_ip = self.receiver_ip_entry.get()
