@@ -2,7 +2,7 @@ import os
 import numpy as np
 from matplotlib import pyplot as plt
 
-class DatasetGenerator:
+class ImageGenerator:
     def __init__(self):
         self.dataset_path = os.path.join(os.path.dirname(__file__), 'data')
         self.image_size = (28, 28)
@@ -48,8 +48,10 @@ class DatasetGenerator:
 
         # create image with black background and white pixels for the position
         image = np.zeros((self.image_size[0], self.image_size[1]), dtype=np.uint8)
+        image_orig = np.zeros((self.image_size[0], self.image_size[1]), dtype=np.uint8)
         # create the image path
         image_path = os.path.join(self.dataset_path, f"{self.image_count}.{self.image_format}")
+        image_path_orig = os.path.join(self.dataset_path, f"{self.image_count}_orig.{self.image_format}")
         self.image_count += 1
 
         # save the x, y positions of the trackers for later use
@@ -77,6 +79,7 @@ class DatasetGenerator:
                 raise ValueError(f"Position ({x}, {y}) is out of image range.")
 
             image[x, y] = 255
+            image_orig[x, y] = 255
             x_positions.append(x)
             y_positions.append(y)
             # # create a white pixel at the position and a radius around it
@@ -128,19 +131,15 @@ class DatasetGenerator:
                 # draw_line(image, x_positions[-1], y_positions[-1], x_positions[0], y_positions[0])
         
 
-
-
-
         # save the image as a png file
-        plt.imsave(image_path, image, cmap='gray')            
+        plt.imsave(image_path, image, cmap='gray')   
+        plt.imsave(image_path_orig, image_orig, cmap='gray')         
         # print the image path
         print(f"Image saved at {image_path}")
 
-        return True
+        # return the image
+        return image_orig, image
 
 
 
 
-
-
-# if __name__ == "__main__":
