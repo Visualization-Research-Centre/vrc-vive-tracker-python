@@ -98,9 +98,9 @@ class Processor:
                 if self.debug:
                     dbg_str = "Blobs:\n" 
                     for i,blob in enumerate(blobs):
-                        dbg_str += f"\tID {i}:({blob[0][0]:.2f} "
-                        dbg_str += f",{blob[0][1]:.2f} "
-                        dbg_str += f",{blob[1]:.2f})\n"
+                        dbg_str += f"\tID {i}:({blob[0]:.2f} "
+                        dbg_str += f",{blob[1]:.2f} "
+                        dbg_str += f",{blob[2]:.2f})\n"
                     logging.info(dbg_str)
                     
             if self.debug:
