@@ -60,11 +60,8 @@ class ViveEncoder:
 
             # Add blob data
             for blob in self.blobs:
-                # Encode position (2 floats, 4 bytes each)
-                for pos in blob[0]:
+                # Encode position (3 floats, 4 bytes each)
+                for pos in blob:
                     byte_data.extend(struct.pack('<f', pos))
-
-                # Encode weight (1 float, 4 bytes)
-                byte_data.extend(struct.pack('<f', blob[1]))
 
         return bytes(byte_data)

@@ -62,7 +62,7 @@ class Recorder:
         elif file_type == "txt":
             self.save_text(file_path)
         else:
-            logging.error("Invalid file type. Use 'bin' or 'txt'.")
+            logging.warning("Invalid file type. Use 'bin' or 'txt'.")
 
     def save_binary(self, file_path):
         if len(self.data) != 0:

@@ -50,10 +50,9 @@ class ViveBlobber:
                     visited[neighbor] = True
                     index_q.append(neighbor)
 
-            blob_center = np.mean(current_blob_positions, axis=0)
-            blob_center = tuple(blob_center.astype(np.float32))
+            blob_center = np.mean(current_blob_positions, axis=0).astype(np.float32)
             blob_weight = len(current_blob_positions)
-            blobs.append((blob_center, blob_weight))
+            blobs.append((blob_center[0], blob_center[1], blob_weight))
 
         return blobs, blob_indices
     

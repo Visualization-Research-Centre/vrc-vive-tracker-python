@@ -31,7 +31,6 @@ class UDPReceiverQ(DataSource):
         self.thread = None
         self.sock = None
         self._is_connected = False
-        self.lock = threading.Lock()
         self.callback = callback
 
     def start(self):
@@ -44,17 +43,15 @@ class UDPReceiverQ(DataSource):
         if not self.is_connected():
             logging.error("Connection failed.")
             return False
-        with self.lock:
-            self.running = True
-            self.thread = threading.Thread(target=self.handle_data, daemon=True)
-            self.thread.start()
-            logging.info("Receiver started.")
+        self.running = True
+        self.thread = threading.Thread(target=self.handle_data, daemon=True)
+        self.thread.start()
+        logging.info("Receiver started.")
         return True
 
     def stop(self):
         """Stop the receiver thread."""
-        with self.lock:
-            self.running = False
+        self.running = False
         if self.thread:
             self.thread.join()
         logging.info("Receiver stopped.")
@@ -68,30 +65,27 @@ class UDPReceiverQ(DataSource):
     
 
     def is_running(self):
-        with self.lock:
-            return self.running
+        return self.running
 
     def is_connected(self):
-        with self.lock:
-            return self._is_connected
+        return self._is_connected
     
     def connect(self):
         """bind to the socket."""
-        with self.lock:
-            if self.sock:
-                self.close()
-            try:
-                self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
-                self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-                self.sock.bind((self.ip, self.port))
-                self.sock.settimeout(.1)
-                logging.info(f"Receiver connected to {self.ip}:{self.port}.")
-                self._is_connected = True
-                return True
-            except socket.error as e:
-                logging.error(f"Socket error while connecting: {e}")
-                return False
+        if self.sock:
+            self.close()
+        try:
+            self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+            self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            self.sock.bind((self.ip, self.port))
+            self.sock.settimeout(.1)
+            logging.info(f"Receiver connected to {self.ip}:{self.port}.")
+            self._is_connected = True
+            return True
+        except socket.error as e:
+            logging.error(f"Socket error while connecting: {e}")
+            return False
 
     def handle_data(self):
         while self.running:
@@ -125,21 +119,18 @@ class Player(DataSource):
         self.callback = callback
         self.playing = False
         self.thread = None
-        self.lock = threading.Lock()
         self.queue = queue.Queue()
 
 
     def start(self):
-        with self.lock:
-            self.playing = True
+        self.playing = True
         self.thread = threading.Thread(target=self.play_loop)
         self.thread.start()
         logging.info("Player started.")
         return True
 
     def stop(self):
-        with self.lock:
-            self.playing = False
+        self.playing = False
         if self.thread is not None:
             self.thread.join()
         logging.info("Player thread stopped.")
@@ -189,8 +180,7 @@ class Player(DataSource):
                 self.data.append((float(timestamp), data))
 
     def is_playing(self):
-        with self.lock:
-            return self.playing
+        return self.playing
 
     def play(self):
         start_time = time.time()
