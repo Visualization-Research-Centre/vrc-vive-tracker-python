@@ -156,7 +156,7 @@ class App(tk.Tk):
         self.augment_var = tk.IntVar()
         self.augment_checkbox = ttk.Checkbutton(process_frame, variable=self.augment_var, command=self.handle_augment_checkbox)
         self.augment_checkbox.grid(row=0, column=1, padx=5, pady=5, sticky="w")
-        self.augment_var.set(1)
+        self.augment_var.set(0)
         
         self.augment_slider = ttk.Scale(process_frame, from_=1, to=20, orient=tk.HORIZONTAL)
         self.augment_slider.grid(row=1, column=0, padx=5, pady=5, sticky="w")
