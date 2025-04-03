@@ -1,12 +1,28 @@
 import numpy as np
+import os
+import matplotlib.pyplot as plt
 
 class ImageGenerator:
     def __init__(self):
+        self.dataset_path = os.path.join(os.path.dirname(__file__), 'data')
+        self.image_format = 'png'
         self.image_size = (28, 28)
         self.image_count = 0
         self.position_range = (-4, 4)
 
-    def generate_image(self, tracker_data):
+
+    def set_dataset_path(self, dataset_path):
+        try:
+            if not os.path.exists(dataset_path):
+                os.makedirs(dataset_path)
+            if not os.path.isdir(dataset_path):
+                raise ValueError(f"{dataset_path} is not a directory.")
+            self.dataset_path = dataset_path
+        except Exception as e:
+            raise ValueError(f"Failed to set dataset path: {e}")
+        
+
+    def generate_image(self, tracker_data, save_image=False):
         def normalize(x, y):
             old_min = self.position_range[0]
             old_max = self.position_range[1]
@@ -114,6 +130,10 @@ class ImageGenerator:
         image = np.zeros((self.image_size[0], self.image_size[1]), dtype=np.uint8)
         image_orig = np.zeros((self.image_size[0], self.image_size[1]), dtype=np.uint8)
 
+        # create the image path
+        image_path = os.path.join(self.dataset_path, f"{self.image_count}.{self.image_format}")
+        image_path_orig = os.path.join(self.dataset_path, f"{self.image_count}_orig.{self.image_format}")
+
         self.image_count += 1
 
         # save the x, y positions of the trackers for later use
@@ -147,43 +167,16 @@ class ImageGenerator:
         image_orig, image = unique_connection(x_positions, y_positions)
 
         # alg 2
-        image_orig, image = unique_connection_w_tracing(x_positions, y_positions)  
+        image_orig, image = unique_connection_w_tracing(x_positions, y_positions)
+
+        # save the image
+        if save_image:
+            plt.imsave(image_path, image, cmap='gray')   
+            plt.imsave(image_path_orig, image_orig, cmap='gray')    
+            print(f"Image saved at {image_path}")   
         
         # return the image
         return image_orig, image
-
-
-if __name__ == "__main__":
-    import os
-    from matplotlib import pyplot as plt
-    # Example usage
-    generator = ImageGenerator()
-    generator.set_dataset_path('data')
-    tracker_data = [
-        {
-            'name': 'Tracker1',
-            'position': [1.0, 0.0, 2.0],
-            'rotation': [0.0, 0.0, 0.0, 1.0]
-        },
-        {
-            'name': 'Tracker2',
-            'position': [3.0, 0.0, 4.0],
-            'rotation': [0.0, 1.0, 0.0, 1.0]
-        }
-    ]
-    image_orig, image = generator.generate_image(tracker_data)
-    plt.imshow(image_orig, cmap='gray')
-    plt.show()
-
-    # save the image as a png file
-    dataset_path = os.path.join(os.path.dirname(__file__), 'data')
-    # create the image path
-    image_format = 'png'
-    image_path = os.path.join(dataset_path, f"{image_count}.{image_format}")
-    image_path_orig = os.path.join(dataset_path, f"{image_count}_orig.{image_format}")
-    plt.imsave(image_path, image, cmap='gray')   
-    plt.imsave(image_path_orig, image_orig, cmap='gray')         
-    # print the image path
-    print(f"Image saved at {image_path}")
+        
 
 
