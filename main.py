@@ -156,7 +156,7 @@ class App(tk.Tk):
         self.augment_var = tk.IntVar()
         self.augment_checkbox = ttk.Checkbutton(process_frame, variable=self.augment_var, command=self.handle_augment_checkbox)
         self.augment_checkbox.grid(row=0, column=1, padx=5, pady=5, sticky="w")
-        self.augment_var.set(1)
+        self.augment_var.set(0)
         
         self.augment_slider = ttk.Scale(process_frame, from_=1, to=20, orient=tk.HORIZONTAL)
         self.augment_slider.grid(row=1, column=0, padx=5, pady=5, sticky="w")
@@ -189,6 +189,7 @@ class App(tk.Tk):
         self.ignore_vive_tracker_names_entry.grid(row=8, column=0, padx=5, pady=5, sticky="ew")
         self.ignore_vive_tracker_names_entry.insert(0, ', '.join(self.ignore_vive_tracker_names))
         self.ignore_vive_tracker_names_entry.bind("<Return>", self.update_ignore_vive_tracker_names)
+        self.ignore_vive_tracker_names_entry.bind("<FocusOut>", self.update_ignore_vive_tracker_names)
 
         self.debug_var = tk.IntVar()
         self.debug_checkbox = ttk.Checkbutton(process_frame, text="Debug Mode", variable=self.debug_var, command=self.handle_debug_checkbox)
@@ -199,6 +200,14 @@ class App(tk.Tk):
         self.bypass_processor_checkbox.grid(row=9, column=1, padx=5, pady=5, sticky="w")
 
 
+        # Visualisation
+        self.visualisation_frame = ttk.LabelFrame(self, text="Visualisation")
+        self.visualisation_frame.grid(row=3, column=0, padx=10, sticky="ew")
+        
+        self.canvas = tk.Canvas(self.visualisation_frame, width=280, height=280, bg="white")
+        self.canvas.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
+        
+
         # fill the empty space
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
@@ -207,6 +216,31 @@ class App(tk.Tk):
         self.update_augment_slider(None)
         self.update_compute_blobs_slider(None)
 
+
+    def update_canvas(self, blobs, trackers):
+        """blobs and tracker are in the range of [-4, 4]"""
+        width = self.canvas.winfo_width()
+        height = self.canvas.winfo_height()
+        self.canvas.delete("all")
+        # draw the blobs
+        for blob in blobs:
+            x, y = blob[0], blob[1]
+            r = blob[2] * 10
+            x = (x + 4) / 8 * width
+            y = height - (y + 4) / 8 * height
+            self.canvas.create_oval(x-r, y-r, x+r, y+r, fill="red", outline="")
+        # draw the trackers
+        for tracker in trackers:
+            x, y = tracker['position'][0], tracker['position'][2]
+            x = (x + 4) / 8 * width
+            y = height - (y + 4) / 8 * height
+            self.canvas.create_oval(x-5, y-5, x+5, y+5, fill="blue", outline="")
+            self.canvas.create_text(x, y-10, text=tracker['name'], fill="black", font=("Arial", 8))
+        # draw the coordinate system
+        self.canvas.create_line(0, height/2, width, height/2, fill="black", dash=(2, 2))
+        self.canvas.create_line(width/2, 0, width/2, height, fill="black", dash=(2, 2))
+        # draw the center
+        self.canvas.create_oval(width/2-5, height/2-5, width/2+5, height/2+5, fill="green", outline="")
 
     def update_variables(self):
         self.receiver_ip = self.receiver_ip_entry.get()
@@ -283,8 +317,10 @@ class App(tk.Tk):
         # signals
         is_save_file_path_valid = self.save_file_path is not None
         is_load_file_path_valid = self.file_path is not None
+        is_testing = self.connect_var.get()
     
         if self.state == self.states[0]: # idle
+                
             self.connect_checkbox.config(state=tk.NORMAL)
             # record
             self.btn_save.config(state=tk.NORMAL)
@@ -316,8 +352,7 @@ class App(tk.Tk):
             self.btn_record.config(state=tk.DISABLED)
             self.connect_checkbox.config(state=tk.DISABLED)
             
-        elif self.state == self.states[3]: # testing            
-            self.connect_checkbox.config(state=tk.DISABLED)
+        if self.state == self.states[3]: # testing            
             pass
         
         logging.info(f"State: {self.state}")
@@ -381,7 +416,7 @@ class App(tk.Tk):
             return
 
         # start the processor
-        self.processor = Processor(callback_data=self.src.get_data_block, callback=self.sender.update, bypass=self.bypass_processor, debug=self.debug)
+        self.processor = Processor(callback_data=self.src.get_data_block, callback=self.sender.update, bypass=self.bypass_processor, debug=self.debug, callback_visualize=self.update_canvas)
         self.processor.set_num_augmentations(self.augment_slider_value)
         self.processor.set_radius(self.compute_blobs_slider_value)
         if self.bypass_processor:
@@ -438,10 +473,8 @@ class App(tk.Tk):
         self.update_state("Idle")
         
     def disconnect_when_testing(self):
-        if self.state == self.states[3]:
-            self.disconnect_test()
-            self.connect_checkbox
-            self.connect_var.set(0)
+        self.disconnect_test()
+        self.connect_var.set(0)
         
         
     def handle_recording(self):
@@ -494,7 +527,6 @@ class App(tk.Tk):
         else:
             messagebox.showwarning("Warning", "No file selected.")
             self.file_path = None
-        self.update_state("Idle")
 
     def save_data_location(self):
         self.save_file_path = filedialog.asksaveasfilename()
@@ -504,7 +536,6 @@ class App(tk.Tk):
             self.save_data_label.config(text=self.trim_path(self.save_file_path))
         else:
             self.save_file_path = None
-        self.update_state("Idle")
 
     def trim_path(self, path):
         if len(path) > 50:

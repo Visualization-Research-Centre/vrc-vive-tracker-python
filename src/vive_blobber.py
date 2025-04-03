@@ -50,10 +50,9 @@ class ViveBlobber:
                     visited[neighbor] = True
                     index_q.append(neighbor)
 
-            blob_center = np.mean(current_blob_positions, axis=0)
-            blob_center = tuple(blob_center.astype(np.float32))
+            blob_center = np.mean(current_blob_positions, axis=0).astype(np.float32)
             blob_weight = len(current_blob_positions)
-            blobs.append((blob_center, blob_weight))
+            blobs.append((blob_center[0], blob_center[1], blob_weight))
 
         return blobs, blob_indices
     
@@ -69,7 +68,10 @@ class ViveBlobber:
         """
         positions = []
         for tracker in vr_tracker_data:
-            positions.append(tracker["position"][:2])  # Use only x, y for blob detection
+            # Use only x, z for blob detection
+            x = tracker["position"][0]
+            z = tracker["position"][2]
+            positions.append((x, z))
 
         # Get blobs and blob indices
         blobs, blob_indices = self.get_blobs(positions)

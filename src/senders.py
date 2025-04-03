@@ -11,7 +11,6 @@ class UDPSenderQ:
         self.sock = None
         self.queue = queue.Queue()
         self.thread = None
-        self.lock = threading.Lock()
         self.debug = debug
         if type(ip) is str:
             if ip == 'broadcast' or ip.endswith('.255'):
@@ -24,8 +23,7 @@ class UDPSenderQ:
             raise ValueError("Invalid IP address format.")
 
     def is_running(self):
-        with self.lock:
-            return self.running
+        return self.running
         
     def set_debug(self, debug):
         self.debug = debug
@@ -66,8 +64,7 @@ class UDPSenderQ:
 
     def stop(self):
         if self.is_running():
-            with self.lock:
-                self.running = False
+            self.running = False
             if self.thread is not None:
                 self.thread.join()
             logging.info("Sender stopped.")
