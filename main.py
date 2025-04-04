@@ -225,7 +225,7 @@ class App(tk.Tk):
         # draw the blobs
         for blob in blobs:
             x, y = blob[0], blob[1]
-            r = blob[2] * 10
+            r = blob[2] * width / 16 * self.compute_blobs_slider_value
             x = (x + 4) / 8 * width
             y = height - (y + 4) / 8 * height
             self.canvas.create_oval(x-r, y-r, x+r, y+r, fill="red", outline="")
