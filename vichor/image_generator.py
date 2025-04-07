@@ -171,6 +171,10 @@ class ImageGenerator:
 
         # save the image
         if save_image:
+            try:
+                os.makedirs(self.dataset_path, exist_ok=True)
+            except Exception as e:
+                raise ValueError(f"Failed to create dataset path: {e}")
             plt.imsave(image_path, image, cmap='gray')   
             plt.imsave(image_path_orig, image_orig, cmap='gray')    
             print(f"Image saved at {image_path}")   
