@@ -156,11 +156,25 @@ class Player(DataSource):
             logging.error(f"File not found: {file_path}")
             return
         with open(file_path, "rb") as f:
+            # Read the header
+            first = f.read(4)
+            if not first:
+                logging.error("File is empty or corrupted.")
+                return
+            start_time = struct.unpack("<f", first)[0]
+            length = struct.unpack("I", f.read(4))[0]
+            if length != 0:
+                logging.warning("File might be old and recording time is wrong. Interpreting header as data....")
+                data = f.read(length)
+            logging.info(f"Recording time: {start_time}")
+            
             while True:
                 first = f.read(4)
                 if not first:
+                    logging.info("End of file reached.")
                     break
                 if first == b'\x00':
+                    logging.info("End of file reached.")
                     break
                 timestamp = struct.unpack("<f", first)[0]
                 length = struct.unpack("I", f.read(4))[0]

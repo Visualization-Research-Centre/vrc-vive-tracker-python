@@ -67,6 +67,8 @@ class Recorder:
     def save_binary(self, file_path):
         if len(self.data) != 0:
             with open(file_path, "wb") as f:
+                f.write(struct.pack("<f", self.start_time))
+                f.write(struct.pack("I", 0))
                 for timestamp, data in self.data:
                     f.write(struct.pack("<f", timestamp))
                     f.write(struct.pack("I", len(data)))
@@ -79,6 +81,7 @@ class Recorder:
     def save_text(self, file_path):        
         if len(self.data) != 0:
             with open(file_path, "w") as f:
+                f.write(f"{self.start_time}, {len(self.data)}\n")
                 for timestamp, data in self.data:
                     f.write(f"{timestamp}: {data}\n")
                 logging.info(f"Data saved to {file_path} with {timestamp} seconds.")
