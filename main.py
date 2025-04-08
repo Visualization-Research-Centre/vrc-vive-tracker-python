@@ -26,9 +26,7 @@ class App(tk.Tk):
         self.receiver_ip = "127.0.0.1"
         self.receiver_port = 2221
         self.sender_ip = "127.0.0.1"
-        self.sender_ip_list = [
-            "192.168.50.255"
-        ]
+        self.sender_ip_list = ["192.168.50.255"]
         self.sender_port = 2223
         self.ignore_vive_tracker_names = ["2B9219E9"]
 
@@ -46,7 +44,7 @@ class App(tk.Tk):
         self.receiver = None
         self.processor = None
         self.src = None
-        
+
         if config:
             # Load configuration from file
             logging.info(f"Loading configuration from {config}")
@@ -56,19 +54,19 @@ class App(tk.Tk):
                 if sender_list:
                     self.sender_ip_list = sender_list
                 self.receiver_ip = config_data.get("receiver_ip", self.receiver_ip)
-                self.receiver_port = config_data.get("receiver_port", self.receiver_port)
+                self.receiver_port = config_data.get(
+                    "receiver_port", self.receiver_port
+                )
                 self.sender_ip = config_data.get("sender_ip", self.sender_ip)
                 self.sender_port = config_data.get("sender_port", self.sender_port)
                 self.ignore_vive_tracker_names = config_data.get(
                     "ignore_vive_tracker_names", self.ignore_vive_tracker_names
                 )
-                
 
         # states
         self.states = ["Idle", "Recording", "Playing", "Testing"]
         self.state = self.states[0]
         self.init_ui()
-        
 
         self.player = Player()
 
@@ -77,13 +75,13 @@ class App(tk.Tk):
         self.style = ttk.Style()
         self.style.theme_use("clam")  # clam, alt, default, classic
 
-        self.minsize(500, 150)
+        self.minsize(350, 850)
         self.configure(bg="#dfdfdf")
         self.protocol("WM_DELETE_WINDOW", self.exit_gracefully)
 
         # Network frame
         input_frame = ttk.LabelFrame(self, text="Network Settings")
-        input_frame.grid(row=0, column=0, padx=10, sticky="ew")
+        input_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
 
         # Receiver IP and Port
         self.receiver_ip_label = ttk.Label(input_frame, text="Receiver IP:")
@@ -115,31 +113,31 @@ class App(tk.Tk):
         self.sender_port_entry.grid(row=3, column=1, padx=5, pady=5, sticky="ew")
         self.sender_port_entry.insert(0, self.sender_port)
 
+        # Test Connection
+        self.connect_var = tk.IntVar()
+        self.connect_checkbox = ttk.Checkbutton(
+            input_frame,
+            text="Test",
+            variable=self.connect_var,
+            command=self.handle_connect_checkbox,
+        )
+        self.connect_checkbox.grid(row=4, column=0, padx=5, pady=5, sticky="w")
+
         self.sender_use_list_var = tk.IntVar()
         self.sender_use_list_checkbox = ttk.Checkbutton(
             input_frame,
-            text="Use Sender list?",
+            text="Use Sender list",
             variable=self.sender_use_list_var,
             command=self.handle_sender_use_list,
         )
-        self.sender_use_list_checkbox.grid(row=3, column=2, padx=5, pady=5, sticky="w")
-
-        # Test Connection
-        self.connect_label = ttk.Label(input_frame, text="Test Connection")
-        self.connect_label.grid(row=4, column=0, padx=5, pady=5, sticky="w")
-
-        self.connect_var = tk.IntVar()
-        self.connect_checkbox = ttk.Checkbutton(
-            input_frame, variable=self.connect_var, command=self.handle_connect_checkbox
-        )
-        self.connect_checkbox.grid(row=4, column=1, padx=5, pady=5, sticky="w")
+        self.sender_use_list_checkbox.grid(row=4, column=1, padx=5, pady=5, sticky="w")
 
         # Controls frame
         button_frame = ttk.LabelFrame(self, text="Controls")
-        button_frame.grid(row=1, column=0, padx=10, sticky="ew")
+        button_frame.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
 
         self.btn_save = ttk.Button(
-            button_frame, text="Save Data Location", command=self.save_data_location
+            button_frame, text="Save Data", command=self.save_data_location
         )
         self.btn_save.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
@@ -166,14 +164,18 @@ class App(tk.Tk):
 
         # Process frame
         process_frame = ttk.LabelFrame(self, text="Process")
-        process_frame.grid(row=2, column=0, padx=10, sticky="ew")
+        process_frame.grid(row=2, column=0, padx=10, pady=5, sticky="ew")
 
-        self.augemnt_label = ttk.Label(process_frame, text="Augment Data:")
-        self.augemnt_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        slider_frame = ttk.Frame(process_frame)
+        slider_frame.grid(row=0, column=0, padx=0, pady=0, sticky="ew")
+
+        # AUGMENT
+        self.augment_data_label = ttk.Label(slider_frame, text="Augment Data")
+        self.augment_data_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
         self.augment_var = tk.IntVar()
         self.augment_checkbox = ttk.Checkbutton(
-            process_frame,
+            slider_frame,
             variable=self.augment_var,
             command=self.handle_augment_checkbox,
         )
@@ -181,25 +183,29 @@ class App(tk.Tk):
         self.augment_var.set(0)
 
         self.augment_slider = ttk.Scale(
-            process_frame, from_=1, to=20, orient=tk.HORIZONTAL
+            slider_frame,
+            from_=1,
+            to=20,
+            orient=tk.HORIZONTAL,
         )
         self.augment_slider.grid(row=1, column=0, padx=5, pady=5, sticky="w")
-
-        self.augment_slider_label = ttk.Label(process_frame)
-        self.augment_slider_label.grid(row=1, column=1, padx=5, pady=5, sticky="w")
         self.augment_slider.set(1)
         self.augment_slider.bind("<ButtonRelease-1>", self.update_augment_slider)
         self.augment_slider.bind("<Motion>", self.update_augment_slider)
 
-        self.compute_blobs_label = ttk.Label(process_frame, text="Compute Blobs:")
+        self.augment_slider_label = ttk.Label(slider_frame)
+        self.augment_slider_label.grid(row=1, column=1, padx=5, pady=5, sticky="w")
+
+        # BLOBS
+        self.compute_blobs_label = ttk.Label(slider_frame, text="Blobs")
         self.compute_blobs_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
 
         self.compute_blobs_slider = ttk.Scale(
-            process_frame, from_=1, to=40, orient=tk.HORIZONTAL
+            slider_frame, from_=1, to=40, orient=tk.HORIZONTAL
         )
         self.compute_blobs_slider.grid(row=3, column=0, padx=5, pady=5, sticky="w")
 
-        self.compute_blobs_slider_label = ttk.Label(process_frame)
+        self.compute_blobs_slider_label = ttk.Label(slider_frame)
         self.compute_blobs_slider_label.grid(
             row=3, column=1, padx=5, pady=5, sticky="w"
         )
@@ -209,10 +215,11 @@ class App(tk.Tk):
         )
         self.compute_blobs_slider.bind("<Motion>", self.update_compute_blobs_slider)
 
+        # OTHER
         self.ignore_vive_tracker_names_var = tk.IntVar()
         self.ignore_vive_tracker_names_checkbox = ttk.Checkbutton(
             process_frame,
-            text="Ignore Vive Tracker Names?",
+            text="Ignore Vive Tracker Names",
             variable=self.ignore_vive_tracker_names_var,
             command=self.handle_ignore_vive_trackers,
         )
@@ -221,7 +228,7 @@ class App(tk.Tk):
         )
         self.ignore_vive_tracker_names_var.set(1)
 
-        self.ignore_vive_tracker_names_entry = ttk.Entry(process_frame)
+        self.ignore_vive_tracker_names_entry = ttk.Entry(process_frame, width=34)
         self.ignore_vive_tracker_names_entry.grid(
             row=8, column=0, padx=5, pady=5, sticky="ew"
         )
@@ -246,18 +253,31 @@ class App(tk.Tk):
 
         self.bypass_processor_var = tk.IntVar()
         self.bypass_processor_checkbox = ttk.Checkbutton(
-            process_frame, text="Bypass processing?", variable=self.bypass_processor_var
+            process_frame, text="Bypass", variable=self.bypass_processor_var
         )
-        self.bypass_processor_checkbox.grid(row=9, column=1, padx=5, pady=5, sticky="w")
+        self.bypass_processor_checkbox.grid(
+            row=10, column=0, padx=5, pady=5, sticky="w"
+        )
 
         # Visualisation
         self.visualisation_frame = ttk.LabelFrame(self, text="Visualisation")
-        self.visualisation_frame.grid(row=3, column=0, padx=10, sticky="ew")
+        self.visualisation_frame.grid(row=3, column=0, padx=10, pady=5, sticky="ew")
+
+        self.enable_visualisation_var = tk.IntVar()
+        self.enable_visualisation_checkbox = ttk.Checkbutton(
+            self.visualisation_frame,
+            text="Enable",
+            variable=self.enable_visualisation_var,
+        )
+        self.enable_visualisation_checkbox.grid(
+            row=0, column=0, padx=5, pady=5, sticky="w"
+        )
+        self.enable_visualisation_var.set(1)
 
         self.canvas = tk.Canvas(
             self.visualisation_frame, width=280, height=280, bg="white"
         )
-        self.canvas.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
+        self.canvas.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
 
         # fill the empty space
         self.columnconfigure(0, weight=1)
@@ -600,41 +620,46 @@ class App(tk.Tk):
 
     def update_canvas(self, blobs, trackers):
         """blobs and tracker are in the range of [-4, 4]"""
-        width = self.canvas.winfo_width()
-        height = self.canvas.winfo_height()
-        self.canvas.delete("all")
-        # draw the blobs
-        for blob in blobs:
-            x, y = blob[0], blob[1]
-            r = blob[2] * width / 16 * self.compute_blobs_slider_value
-            x = (x + 4) / 8 * width
-            y = height - (y + 4) / 8 * height
-            self.canvas.create_oval(x - r, y - r, x + r, y + r, fill="red", outline="")
-        # draw the trackers
-        for tracker in trackers:
-            x, y = tracker["position"][0], tracker["position"][2]
-            x = (x + 4) / 8 * width
-            y = height - (y + 4) / 8 * height
-            self.canvas.create_oval(x - 5, y - 5, x + 5, y + 5, fill="blue", outline="")
-            self.canvas.create_text(
-                x, y - 10, text=tracker["name"], fill="black", font=("Arial", 8)
+        if self.enable_visualisation_var.get():
+            width = self.canvas.winfo_width()
+            height = self.canvas.winfo_height()
+            self.canvas.delete("all")
+            # draw the blobs
+            for blob in blobs:
+                x, y = blob[0], blob[1]
+                r = blob[2] * width / 16 * self.compute_blobs_slider_value
+                x = (x + 4) / 8 * width
+                y = height - (y + 4) / 8 * height
+                self.canvas.create_oval(
+                    x - r, y - r, x + r, y + r, fill="red", outline=""
+                )
+            # draw the trackers
+            for tracker in trackers:
+                x, y = tracker["position"][0], tracker["position"][2]
+                x = (x + 4) / 8 * width
+                y = height - (y + 4) / 8 * height
+                self.canvas.create_oval(
+                    x - 5, y - 5, x + 5, y + 5, fill="blue", outline=""
+                )
+                self.canvas.create_text(
+                    x, y - 10, text=tracker["name"], fill="black", font=("Arial", 8)
+                )
+            # draw the coordinate system
+            self.canvas.create_line(
+                0, height / 2, width, height / 2, fill="black", dash=(2, 2)
             )
-        # draw the coordinate system
-        self.canvas.create_line(
-            0, height / 2, width, height / 2, fill="black", dash=(2, 2)
-        )
-        self.canvas.create_line(
-            width / 2, 0, width / 2, height, fill="black", dash=(2, 2)
-        )
-        # draw the center
-        self.canvas.create_oval(
-            width / 2 - 5,
-            height / 2 - 5,
-            width / 2 + 5,
-            height / 2 + 5,
-            fill="green",
-            outline="",
-        )
+            self.canvas.create_line(
+                width / 2, 0, width / 2, height, fill="black", dash=(2, 2)
+            )
+            # draw the center
+            self.canvas.create_oval(
+                width / 2 - 5,
+                height / 2 - 5,
+                width / 2 + 5,
+                height / 2 + 5,
+                fill="green",
+                outline="",
+            )
 
     ### UTILS
 
@@ -653,14 +678,18 @@ class App(tk.Tk):
 
 
 if __name__ == "__main__":
-    
+
     import argparse
-    
+
     parser = argparse.ArgumentParser(description="Vive Tracker Recorder")
     parser.add_argument(
-        "-c", "--config", type=str, help="Path to the configuration file", default="config.json"
+        "-c",
+        "--config",
+        type=str,
+        help="Path to the configuration file",
+        default="config.json",
     )
     args = parser.parse_args()
-    
+
     app = App(config=args.config)
     app.mainloop()
