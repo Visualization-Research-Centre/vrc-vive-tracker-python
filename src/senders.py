@@ -4,8 +4,9 @@ import threading
 import logging
 import queue
 
+
 class UDPSenderQ:
-    def __init__(self, ip='127.0.0.1', port=2223, debug=False):
+    def __init__(self, ip="127.0.0.1", port=2223, debug=False):
         self.port = port
         self.running = False
         self.sock = None
@@ -13,8 +14,8 @@ class UDPSenderQ:
         self.thread = None
         self.debug = debug
         if type(ip) is str:
-            if ip == 'broadcast' or ip.endswith('.255'):
-                self.ip = ['<broadcast>']
+            if ip == "broadcast" or ip.endswith(".255"):
+                self.ip = ["<broadcast>"]
             else:
                 self.ip = [ip]
         elif type(ip) is list:
@@ -24,7 +25,7 @@ class UDPSenderQ:
 
     def is_running(self):
         return self.running
-        
+
     def set_debug(self, debug):
         self.debug = debug
 

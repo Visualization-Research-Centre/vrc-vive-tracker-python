@@ -1,4 +1,3 @@
-
 import logging
 import time
 import struct
@@ -23,7 +22,6 @@ class Recorder:
         self.killme = False
         self.thread = threading.Thread(target=self.record_loop, daemon=True)
         self.thread.start()
-
 
     def start(self):
         logging.info("Recorder started.")
@@ -76,9 +74,8 @@ class Recorder:
                 logging.info(f"Data saved to {file_path} with {timestamp} seconds.")
         else:
             logging.error("No data to log")
-                
 
-    def save_text(self, file_path):        
+    def save_text(self, file_path):
         if len(self.data) != 0:
             with open(file_path, "w") as f:
                 f.write(f"{self.start_time}, {len(self.data)}\n")
@@ -99,12 +96,11 @@ class Recorder:
 if __name__ == "__main__":
     from src.sources import UDPReceiverQ
     from src.senders import UDPSenderQ
-    
 
-    receiver = UDPReceiverQ('', 2223)
+    receiver = UDPReceiverQ("", 2223)
     receiver.start()
 
-    sender = UDPSenderQ('127.0.0.1', 2224)
+    sender = UDPSenderQ("127.0.0.1", 2224)
     sender.start()
 
     def callback(data):
@@ -122,4 +118,3 @@ if __name__ == "__main__":
     recorder.stop()
     recorder.save_binary("data.bin")
     recorder.save_text("data.txt")
-

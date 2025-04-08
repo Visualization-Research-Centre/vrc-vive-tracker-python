@@ -5,9 +5,17 @@ from src.vive_encoder import ViveEncoder
 from src.vive_blobber import ViveBlobber
 from src.vive_augmentor import ViveAugmentor
 
+
 class Processor:
 
-    def __init__(self, callback_data, callback=None, bypass=False, debug=False, callback_visualize=None):
+    def __init__(
+        self,
+        callback_data,
+        callback=None,
+        bypass=False,
+        debug=False,
+        callback_visualize=None,
+    ):
         self.callback_data = callback_data
         self.callback = callback
         self.radius = 1
@@ -24,7 +32,7 @@ class Processor:
         self.debug = debug
         self.augment_data = True
         self.callback_visualize = callback_visualize
-    
+
     def set_radius(self, radius):
         self.blobber.radius = radius
 
@@ -52,77 +60,76 @@ class Processor:
         self.thread.start()
         logging.info("Processor started.")
         return True
-    
+
     def stop(self):
         self.running = False
         # if self.thread:
         #     self.thread.join()
         logging.info("Processor stopped.")
 
-
     def close(self):
         self.stop()
         logging.info("Processor closed.")
 
-    
     def process(self):
         # get data
 
         data = self.callback_data()
-        
+
         if data is None:
             return
-        
+
         if self.debug:
             logging.info(f"Got: {len(data)} bytes")
-        
+
         if not self.bypass:
             # to avoid freezing the UI we use a timeout on the queue get which can lead to None data
-            
+
             # decode the data (find the trackers)
             self.decoder.decode(data)
             tracker_data = self.decoder.vive_trackers
 
             # augment the data
             if self.augment_data:
-                tracker_data = self.augmentor.augment(tracker_data, self.num_augmentations)
+                tracker_data = self.augmentor.augment(
+                    tracker_data, self.num_augmentations
+                )
 
             if tracker_data is None:
                 logging.warning("No devices found in the decoded data.")
                 return None
-            
 
             # detect the blobs
             if self.detect_blobs:
                 blobs, tracker_data = self.blobber.process_data(tracker_data)
                 self.encoder.blobs = blobs
                 if self.debug:
-                    dbg_str = "Blobs:\n" 
-                    for i,blob in enumerate(blobs):
+                    dbg_str = "Blobs:\n"
+                    for i, blob in enumerate(blobs):
                         dbg_str += f"\tID {i}:({blob[0]:.2f} "
                         dbg_str += f",{blob[1]:.2f} "
                         dbg_str += f",{blob[2]:.2f})\n"
                     logging.info(dbg_str)
-                    
+
             if self.debug:
                 dbg_str = "Trackers:\n"
                 for tracker in tracker_data:
                     dbg_str += f"\t{tracker['name']} #{tracker['device_class']}: "
-                    if tracker['is_tracked']:
+                    if tracker["is_tracked"]:
                         dbg_str += " o "
                     else:
                         dbg_str += " x "
-                    if tracker['blob_id'] is not None:
+                    if tracker["blob_id"] is not None:
                         dbg_str += f"blob: {tracker['blob_id']} "
                     dbg_str += f"\t({tracker['position'][0]:.2f} "
                     dbg_str += f",{tracker['position'][1]:.2f} "
                     dbg_str += f",{tracker['position'][2]:.2f})\n"
                 logging.info(dbg_str)
-          
+
             # encode the data
             self.encoder.vive_trackers = tracker_data
             data = self.encoder.encode()
-            
+
             self.callback_visualize(blobs, tracker_data)
 
         if self.debug:
@@ -131,8 +138,6 @@ class Processor:
         # send the data out
         if self.callback:
             self.callback(data)
-            
-
 
     def run(self):
         while self.running:

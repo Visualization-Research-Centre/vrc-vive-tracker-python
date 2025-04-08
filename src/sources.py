@@ -1,4 +1,3 @@
-
 import socket
 import threading
 import time
@@ -7,6 +6,7 @@ import queue
 import os
 import struct
 from abc import ABC, abstractmethod
+
 
 class DataSource(ABC):
     @abstractmethod
@@ -21,8 +21,9 @@ class DataSource(ABC):
     def close(self):
         pass
 
+
 class UDPReceiverQ(DataSource):
-    def __init__(self, ip='', port=2222, callback=None):
+    def __init__(self, ip="", port=2222, callback=None):
         self.ip = ip
         self.port = port
         self.buffer_size = 1460
@@ -55,21 +56,20 @@ class UDPReceiverQ(DataSource):
         if self.thread:
             self.thread.join()
         logging.info("Receiver stopped.")
-        
+
     def close(self):
         self.stop()
         if self.sock:
             self.sock.close()
             self.sock = None
         logging.info("Receiver closed.")
-    
 
     def is_running(self):
         return self.running
 
     def is_connected(self):
         return self._is_connected
-    
+
     def connect(self):
         """bind to the socket."""
         if self.sock:
@@ -79,7 +79,7 @@ class UDPReceiverQ(DataSource):
             self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
             self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.sock.bind((self.ip, self.port))
-            self.sock.settimeout(.1)
+            self.sock.settimeout(0.1)
             logging.info(f"Receiver connected to {self.ip}:{self.port}.")
             self._is_connected = True
             return True
@@ -100,13 +100,13 @@ class UDPReceiverQ(DataSource):
             except socket.error as e:
                 logging.error(f"Socket error while receiving data: {e}")
                 self.stop()
-    
+
     def get_data_block(self):
         try:
-            return self.data_queue.get(timeout=.1)
+            return self.data_queue.get(timeout=0.1)
         except queue.Empty:
             return None
-        
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
@@ -121,7 +121,6 @@ class Player(DataSource):
         self.thread = None
         self.queue = queue.Queue()
 
-
     def start(self):
         self.playing = True
         self.thread = threading.Thread(target=self.play_loop)
@@ -135,11 +134,9 @@ class Player(DataSource):
             self.thread.join()
         logging.info("Player thread stopped.")
 
-
     def close(self):
         self.stop()
         logging.info("Player closed.")
-
 
     def load(self, file_path):
         file_type = file_path.split(".")[-1]
@@ -164,23 +161,25 @@ class Player(DataSource):
             start_time = struct.unpack("<f", first)[0]
             length = struct.unpack("I", f.read(4))[0]
             if length != 0:
-                logging.warning("File might be old and recording time is wrong. Interpreting header as data....")
+                logging.warning(
+                    "File might be old and recording time is wrong. Interpreting header as data...."
+                )
                 data = f.read(length)
             logging.info(f"Recording time: {start_time}")
-            
+
             while True:
                 first = f.read(4)
                 if not first:
                     logging.info("End of file reached.")
                     break
-                if first == b'\x00':
+                if first == b"\x00":
                     logging.info("End of file reached.")
                     break
                 timestamp = struct.unpack("<f", first)[0]
                 length = struct.unpack("I", f.read(4))[0]
                 data = f.read(length)
                 self.data.append((timestamp, data))
-                
+
     def load_from_text(self, file_path):
         self.data = []
         if not os.path.exists(file_path):
@@ -220,19 +219,16 @@ class Player(DataSource):
 
     def get_data_block(self):
         try:
-            return self.queue.get(timeout=.1)
+            return self.queue.get(timeout=0.1)
         except queue.Empty:
             return None
-
-    def __exit__(self):
-        self.stop()
 
 
 ### TEST ###
 
 if __name__ == "__main__":
- 
-    receiver = UDPReceiverQ('', 2223)
+
+    receiver = UDPReceiverQ("", 2223)
     receiver.start()
 
     i = 0
@@ -245,7 +241,6 @@ if __name__ == "__main__":
         i += 1
 
     receiver.close()
-
 
     def callback(data):
         print(data)
