@@ -69,8 +69,16 @@ class ViveBlobber:
         Returns:
             A list of blobs and the updated tracker data with blob IDs.
         """
-        positions = []
+
         for tracker in vr_tracker_data:
+            tracker["blob_id"] = 255
+
+        vr_tracker_data_tracked = [
+            tracker for tracker in vr_tracker_data if tracker["is_tracked"]
+        ]
+
+        positions = []
+        for tracker in vr_tracker_data_tracked:
             # Use only x, z for blob detection
             x = tracker["position"][0]
             z = tracker["position"][2]
@@ -80,7 +88,7 @@ class ViveBlobber:
         blobs, blob_indices = self.get_blobs(positions)
 
         # Add blob_id to each tracker
-        for tracker, blob_id in zip(vr_tracker_data, blob_indices):
+        for tracker, blob_id in zip(vr_tracker_data_tracked, blob_indices):
             tracker["blob_id"] = blob_id
 
         return blobs, vr_tracker_data
