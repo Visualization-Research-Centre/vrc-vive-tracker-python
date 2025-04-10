@@ -268,6 +268,7 @@ class App(tk.Tk):
             self.visualisation_frame,
             text="Enable",
             variable=self.enable_visualisation_var,
+            command=self.handle_visualisation_checkbox
         )
         self.enable_visualisation_checkbox.grid(
             row=0, column=0, padx=5, pady=5, sticky="w"
@@ -522,7 +523,7 @@ class App(tk.Tk):
             callback=self.sender.update,
             bypass=self.bypass_processor,
             debug=self.debug,
-            callback_visualize=self.update_canvas,
+            canvas=self.canvas
         )
         self.processor.set_num_augmentations(self.augment_slider_value)
         self.processor.set_radius(self.compute_blobs_slider_value)
@@ -618,48 +619,15 @@ class App(tk.Tk):
                 logging.info("Debug mode disabled.")
                 self.processor.set_debug(False)
 
-    def update_canvas(self, blobs, trackers):
-        """blobs and tracker are in the range of [-4, 4]"""
+    def handle_visualisation_checkbox(self):
         if self.enable_visualisation_var.get():
-            width = self.canvas.winfo_width()
-            height = self.canvas.winfo_height()
-            self.canvas.delete("all")
-            # draw the blobs
-            for blob in blobs:
-                x, y = blob[0], blob[1]
-                r = blob[2] * width / 16 * self.compute_blobs_slider_value
-                x = (x + 4) / 8 * width
-                y = height - (y + 4) / 8 * height
-                self.canvas.create_oval(
-                    x - r, y - r, x + r, y + r, fill="red", outline=""
-                )
-            # draw the trackers
-            for tracker in trackers:
-                x, y = tracker["position"][0], tracker["position"][2]
-                x = (x + 4) / 8 * width
-                y = height - (y + 4) / 8 * height
-                self.canvas.create_oval(
-                    x - 5, y - 5, x + 5, y + 5, fill="blue", outline=""
-                )
-                self.canvas.create_text(
-                    x, y - 10, text=tracker["name"], fill="black", font=("Arial", 8)
-                )
-            # draw the coordinate system
-            self.canvas.create_line(
-                0, height / 2, width, height / 2, fill="black", dash=(2, 2)
-            )
-            self.canvas.create_line(
-                width / 2, 0, width / 2, height, fill="black", dash=(2, 2)
-            )
-            # draw the center
-            self.canvas.create_oval(
-                width / 2 - 5,
-                height / 2 - 5,
-                width / 2 + 5,
-                height / 2 + 5,
-                fill="green",
-                outline="",
-            )
+            if self.processor:
+                logging.info("Visualisation enabled.")
+                self.processor.set_visualize(True)
+        else:
+            if self.processor:
+                logging.info("Visualisation disabled.")
+                self.processor.set_visualize(False)
 
     ### UTILS
 

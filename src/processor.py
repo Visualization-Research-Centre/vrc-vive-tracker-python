@@ -4,6 +4,7 @@ from src.vive_decoder import ViveDecoder
 from src.vive_encoder import ViveEncoder
 from src.vive_blobber import ViveBlobber
 from src.vive_augmentor import ViveAugmentor
+from src.vive_visualizer import ViveVisualizer
 
 
 class Processor:
@@ -14,7 +15,7 @@ class Processor:
         callback=None,
         bypass=False,
         debug=False,
-        callback_visualize=None,
+        canvas=None,
     ):
         self.callback_data = callback_data
         self.callback = callback
@@ -24,6 +25,7 @@ class Processor:
         self.encoder = ViveEncoder()
         self.blobber = ViveBlobber(self.radius)
         self.augmentor = ViveAugmentor()
+        self.visualizer = ViveVisualizer(canvas)
         self.thread = None
         self.running = False
         self.data = None
@@ -31,10 +33,11 @@ class Processor:
         self.detect_blobs = True
         self.debug = debug
         self.augment_data = True
-        self.callback_visualize = callback_visualize
+        self.visualize = True
 
     def set_radius(self, radius):
         self.blobber.radius = radius
+        self.radius = radius
 
     def set_num_augmentations(self, num_augmentations):
         self.num_augmentations = num_augmentations
@@ -50,6 +53,10 @@ class Processor:
 
     def set_debug(self, debug):
         self.debug = debug
+        
+    def set_visualize(self, vis):
+        self.visualize = vis
+        
 
     def start(self):
         if self.running:
@@ -130,7 +137,8 @@ class Processor:
             self.encoder.vive_trackers = tracker_data
             data = self.encoder.encode()
 
-            self.callback_visualize(blobs, tracker_data)
+            if self.visualize:
+                self.visualizer.update_canvas(blobs, tracker_data, radius=self.radius)
 
         if self.debug:
             logging.info(f"Sent: {len(data)} bytes\n")
