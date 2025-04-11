@@ -276,7 +276,7 @@ class App(tk.Tk):
         self.enable_visualisation_var.set(1)
 
         self.canvas = tk.Canvas(
-            self.visualisation_frame, width=280, height=280, bg="white"
+            self.visualisation_frame, width=500, height=500, bg="white"
         )
         self.canvas.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
 
