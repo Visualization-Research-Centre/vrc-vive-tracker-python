@@ -113,8 +113,6 @@ class ViveDecoder:
         # change battery to blobs_id for each tracker
         for tracker in self.vive_trackers:
             tracker["blob_id"] = int(tracker["battery"] * 100)
-            # remove battery
-            tracker.pop("battery")
 
         blobs_count = byte_data[index]
         blobs = []
