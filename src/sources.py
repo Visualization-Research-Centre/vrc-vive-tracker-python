@@ -7,6 +7,9 @@ import os
 import struct
 from abc import ABC, abstractmethod
 
+from src.vive_decoder import ViveDecoder
+from src.vive_encoder import ViveEncoder
+
 
 class DataSource(ABC):
     @abstractmethod
@@ -101,9 +104,15 @@ class UDPReceiverQ(DataSource):
                 logging.error(f"Socket error while receiving data: {e}")
                 self.stop()
 
-    def get_data_block(self):
+    def get_data_block(self, timeout=0.1):
         try:
-            return self.data_queue.get(timeout=0.1)
+            return self.data_queue.get(timeout=timeout)
+        except queue.Empty:
+            return None
+    
+    def get_data_block_nowait(self):
+        try:
+            return self.data_queue.get_nowait()
         except queue.Empty:
             return None
 
@@ -217,9 +226,93 @@ class Player(DataSource):
     def set_callback(self, callback):
         self.callback = callback
 
-    def get_data_block(self):
+    def get_data_block(self, timeout=0.1):
         try:
-            return self.queue.get(timeout=0.1)
+            return self.queue.get(timeout=timeout)
+        except queue.Empty:
+            return None
+    
+    def get_data_block_nowait(self):
+        try:
+            return self.queue.get_nowait()
+        except queue.Empty:
+            return None
+
+
+class Synchronizer(DataSource):
+    def __init__(self, callbacks, timeout=0.1):
+        self.running = False
+        self.thread = None
+        self.callbacks = callbacks
+        self.queue = queue.Queue()
+        self.decoder = ViveDecoder()
+        self.encoder = ViveEncoder()
+        self.timeout = timeout
+
+    def start(self):
+        if self.running:
+            logging.warning("Synchronizer already running.")
+            return False
+        self.running = True
+        self.thread = threading.Thread(target=self.run, daemon=True)
+        self.thread.start()
+        logging.info("Synchronizer started.")
+        return True
+
+    def stop(self):
+        self.running = False
+        if self.thread:
+            self.thread.join()
+        logging.info("Synchronizer stopped.")
+
+    def close(self):
+        self.stop()
+        logging.info("Synchronizer closed.")
+
+    def run(self):
+        while self.running:
+            self.sync()
+            
+    def sync(self):
+        # Get data from all sources
+        data = [callback(self.timeout) for callback in self.callbacks]
+        
+        tracker_names = []
+        all_trackers = []
+        
+        for d in data:
+            if d is not None:
+                self.decoder.decode(d)
+                tracker_data = self.decoder.vive_trackers
+                # combine all trackers
+                # overwrite trackers with the same name
+                for tracker in tracker_data:
+                    name = tracker["name"]
+                    if name in tracker_names:
+                        # overwrite the tracker
+                        index = tracker_names.index(name)
+                        all_trackers[index] = tracker
+                    else:
+                        tracker_names.append(name)
+                        all_trackers.append(tracker)
+        # Encode the data
+        self.encoder.vive_trackers = all_trackers
+        
+        encoded_data = self.encoder.encode()
+        
+        # Put the encoded data in the queue
+        self.queue.put(encoded_data)
+        
+        
+    def get_data_block(self, timeout=0.1):
+        try:
+            return self.queue.get(timeout=timeout)
+        except queue.Empty:
+            return None
+    
+    def get_data_block_nowait(self):
+        try:
+            return self.queue.get_nowait()
         except queue.Empty:
             return None
 

@@ -6,10 +6,11 @@ from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
 
-from src.sources import UDPReceiverQ, Player
+from src.sources import UDPReceiverQ, Player, Synchronizer
 from src.senders import UDPSenderQ
 from src.recorder import Recorder
 from src.processor import Processor
+
 
 
 logging.basicConfig(
@@ -45,6 +46,7 @@ class App(tk.Tk):
         self.receiver = None
         self.processor = None
         self.src = None
+        self.synchronizer = None
 
         if config:
             # Load configuration from file
@@ -523,18 +525,41 @@ class App(tk.Tk):
             return
 
         # select source
-        self.src = None
+        # self.src = None
+        # if self.file_path:
+        #     self.src = self.player
+        #     self.src.load(self.file_path)
+        # else:
+        #     self.src = UDPReceiverQ(ip=self.receiver_ip, port=self.receiver_port)
+        # if not self.src.start():
+        #     messagebox.showerror(
+        #         "Error", "Failed to start source. Check the IP and Port."
+        #     )
+        #     return
+        
+        
+        self.receiver = UDPReceiverQ(ip=self.receiver_ip, port=self.receiver_port)
+        
+        self.src = self.receiver
         if self.file_path:
-            self.src = self.player
-            self.src.load(self.file_path)
-        else:
-            self.src = UDPReceiverQ(ip=self.receiver_ip, port=self.receiver_port)
+            self.player.load(self.file_path)
+            timeout = 1/60.0
+            self.synchronizer = Synchronizer(
+                [self.receiver.get_data_block, self.player.get_data_block], timeout=timeout
+            )
+            if not self.player.start():
+                messagebox.showerror(
+                    "Error", "Failed to start Player."
+                )
+                return
+            self.src = self.synchronizer
+            
         if not self.src.start():
             messagebox.showerror(
                 "Error", "Failed to start source. Check the IP and Port."
             )
             return
-
+        
         # start the processor
         self.processor = Processor(
             callback_data=self.src.get_data_block,
