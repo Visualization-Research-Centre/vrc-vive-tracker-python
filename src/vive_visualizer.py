@@ -7,6 +7,11 @@ class ViveVisualizer:
         self.canvas = canvas
         self.blobs = []
         self.trackers = []
+        self.connection_visualisation = "None"
+        
+    def set_connection_visualisation(self, type):
+        """Set the visualisation mode."""
+        self.connection_visualisation = type
 
     def update_canvas(self, blobs, trackers, radius):
         """blobs and tracker are in the range of [-4, 4]"""
@@ -34,8 +39,14 @@ class ViveVisualizer:
                 connectors.append((x, y))
 
         # draw connections
-        self.draw_to_all_in_radius(connectors, radius=radius * width / 8)
-        # self.unique_connection_w_tracing(connectors)
+        if self.connection_visualisation == "all_in_radius":
+            self.draw_to_all_in_radius(connectors, radius=radius * width / 8)
+        elif self.connection_visualisation == "nearest":
+            self.draw_to_nearest_neighbor(connectors)
+        elif self.connection_visualisation == "unique":
+            self.unique_connection(connectors)
+        elif self.connection_visualisation == "unique_w_tracing":
+            self.unique_connection_w_tracing(connectors)
 
         # draw the coordinate system
         self.canvas.create_line(

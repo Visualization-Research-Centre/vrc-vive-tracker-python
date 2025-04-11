@@ -274,6 +274,23 @@ class App(tk.Tk):
             row=0, column=0, padx=5, pady=5, sticky="w"
         )
         self.enable_visualisation_var.set(1)
+        
+        
+        # dropdown
+        self.dropdown_label = ttk.Label(self.visualisation_frame, text="Select Visualisation:")
+        self.dropdown_label.grid(row=0, column=1, padx=5, pady=5, sticky="w")
+        self.dropdown_var = tk.StringVar()
+        self.dropdown_var.set("Blobs")
+        self.dropdown = ttk.Combobox(
+            self.visualisation_frame,
+            textvariable=self.dropdown_var,
+            values=["all_in_radius", "unique", "unique_w_tracing", "nearest"],
+            state="readonly",
+        )
+        self.dropdown.grid(row=0, column=2, padx=5, pady=5, sticky="w")
+        self.dropdown.bind("<<ComboboxSelected>>", self.handle_visualisation_selection)
+        
+        self.dropdown.current(0)
 
         self.canvas = tk.Canvas(
             self.visualisation_frame, width=500, height=500, bg="white"
@@ -628,6 +645,12 @@ class App(tk.Tk):
             if self.processor:
                 logging.info("Visualisation disabled.")
                 self.processor.set_visualize(False)
+
+    def handle_visualisation_selection(self, event):
+        if self.processor:
+            logging.info(f"Visualisation mode: {self.dropdown_var.get()}")
+            self.processor.set_connection_visualisation(self.dropdown_var.get())
+
 
     ### UTILS
 
