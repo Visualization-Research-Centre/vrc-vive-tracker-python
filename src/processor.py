@@ -101,8 +101,6 @@ class Processor:
             # decode the data (find the trackers)
             self.decoder.decode(data)
             tracker_data = self.decoder.vive_trackers
-            
-            print(tracker_data)
 
             # augment the data
             if self.augment_data:
