@@ -36,6 +36,7 @@ class App(tk.Tk):
         self.compute_blobs = 0
         self.augment_slider_value = 0
         self.compute_blobs_slider_value = 0
+        self.config_data = None
 
         # actors
         self.recorder = None
@@ -49,17 +50,17 @@ class App(tk.Tk):
             # Load configuration from file
             logging.info(f"Loading configuration from {config}")
             with open(config, "r", encoding="utf-8") as f:
-                config_data = json.load(f)
-                sender_list = config_data.get("sender_list", None)
+                self.config_data = json.load(f)
+                sender_list = self.config_data.get("sender_list", None)
                 if sender_list:
                     self.sender_ip_list = sender_list
-                self.receiver_ip = config_data.get("receiver_ip", self.receiver_ip)
-                self.receiver_port = config_data.get(
+                self.receiver_ip = self.config_data.get("receiver_ip", self.receiver_ip)
+                self.receiver_port = self.config_data.get(
                     "receiver_port", self.receiver_port
                 )
-                self.sender_ip = config_data.get("sender_ip", self.sender_ip)
-                self.sender_port = config_data.get("sender_port", self.sender_port)
-                self.ignore_vive_tracker_names = config_data.get(
+                self.sender_ip = self.config_data.get("sender_ip", self.sender_ip)
+                self.sender_port = self.config_data.get("sender_port", self.sender_port)
+                self.ignore_vive_tracker_names = self.config_data.get(
                     "ignore_vive_tracker_names", self.ignore_vive_tracker_names
                 )
 
@@ -540,7 +541,8 @@ class App(tk.Tk):
             callback=self.sender.update,
             bypass=self.bypass_processor,
             debug=self.debug,
-            canvas=self.canvas
+            canvas=self.canvas,
+            config=self.config_data
         )
         self.processor.set_num_augmentations(self.augment_slider_value)
         self.processor.set_radius(self.compute_blobs_slider_value)

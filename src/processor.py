@@ -5,7 +5,7 @@ from src.vive_encoder import ViveEncoder
 from src.vive_blobber import ViveBlobber
 from src.vive_augmentor import ViveAugmentor
 from src.vive_visualizer import ViveVisualizer
-
+from src.classifier import Classifier
 
 class Processor:
 
@@ -16,6 +16,7 @@ class Processor:
         bypass=False,
         debug=False,
         canvas=None,
+        config=None,
     ):
         self.callback_data = callback_data
         self.callback = callback
@@ -26,6 +27,7 @@ class Processor:
         self.blobber = ViveBlobber(self.radius)
         self.augmentor = ViveAugmentor()
         self.visualizer = ViveVisualizer(canvas)
+        self.classifier = Classifier(config)
         self.thread = None
         self.running = False
         self.data = None
@@ -56,6 +58,10 @@ class Processor:
         
     def set_visualize(self, vis):
         self.visualize = vis
+        
+    def set_connection_visualisation(self, type):
+        """Set the visualisation mode."""
+        self.visualizer.set_connection_visualisation(type)
         
 
     def start(self):
@@ -95,6 +101,8 @@ class Processor:
             # decode the data (find the trackers)
             self.decoder.decode(data)
             tracker_data = self.decoder.vive_trackers
+            
+            print(tracker_data)
 
             # augment the data
             if self.augment_data:
@@ -136,10 +144,21 @@ class Processor:
             # encode the data
             self.encoder.vive_trackers = tracker_data
             data = self.encoder.encode()
+            
+            # classify the data
+            if self.classifier:
+                # preprocess the data
+                trackers = []
+                for tracker in tracker_data:
+                    if tracker["is_tracked"]:
+                        x = tracker["position"][0]
+                        y = tracker["position"][2]
+                        trackers.extend([x,y])
+                probs, label = self.classifier.predict(trackers)
+                # logging.info(f"Class: {label} ({probs})")
 
             if self.visualize:
                 self.visualizer.update_canvas(blobs, tracker_data, radius=self.radius)
-
         if self.debug:
             logging.info(f"Sent: {len(data)} bytes\n")
 

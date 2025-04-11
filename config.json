@@ -14,6 +14,15 @@
         "192.168.50.195"
     ],
     "ignore_vive_tracker_names": [
-        "2B9219E9"
+        "2B9219E9", "6DEC1AFC", "FD0C50D1"
+    ],
+    "classifier_path": "model.pkl",
+    "imputer_path": "imputer.pkl",
+    "scaler_path": "",
+    "input_size": 40,
+    "labels": [
+        "circle",
+        "line",
+        "random"
     ]
 }
