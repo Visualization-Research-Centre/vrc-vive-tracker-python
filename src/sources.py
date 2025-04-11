@@ -296,12 +296,10 @@ class Synchronizer(DataSource):
                         tracker_names.append(name)
                         all_trackers.append(tracker)
         # Encode the data
-        self.encoder.vive_trackers = all_trackers
-        
-        encoded_data = self.encoder.encode()
-        
-        # Put the encoded data in the queue
-        self.queue.put(encoded_data)
+        if all_trackers is not None and len(all_trackers) > 0:
+            self.encoder.vive_trackers = all_trackers
+            encoded_data = self.encoder.encode()
+            self.queue.put(encoded_data)
         
         
     def get_data_block(self, timeout=0.1):

@@ -541,9 +541,15 @@ class App(tk.Tk):
         self.receiver = UDPReceiverQ(ip=self.receiver_ip, port=self.receiver_port)
         
         self.src = self.receiver
+        if not self.receiver.start():
+            messagebox.showerror(
+                "Error", "Failed to start receiver. Check the IP and Port."
+            )
+            return
+        
         if self.file_path:
             self.player.load(self.file_path)
-            timeout = 1/60.0
+            timeout = 0.1
             self.synchronizer = Synchronizer(
                 [self.receiver.get_data_block, self.player.get_data_block], timeout=timeout
             )
