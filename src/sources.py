@@ -7,6 +7,9 @@ import os
 import struct
 from abc import ABC, abstractmethod
 
+from src.vive_decoder import ViveDecoder
+from src.vive_encoder import ViveEncoder
+
 
 class DataSource(ABC):
     @abstractmethod
@@ -101,9 +104,15 @@ class UDPReceiverQ(DataSource):
                 logging.error(f"Socket error while receiving data: {e}")
                 self.stop()
 
-    def get_data_block(self):
+    def get_data_block(self, timeout=0.1):
         try:
-            return self.data_queue.get(timeout=0.1)
+            return self.data_queue.get(timeout=timeout)
+        except queue.Empty:
+            return None
+    
+    def get_data_block_nowait(self):
+        try:
+            return self.data_queue.get_nowait()
         except queue.Empty:
             return None
 
@@ -120,6 +129,7 @@ class Player(DataSource):
         self.playing = False
         self.thread = None
         self.queue = queue.Queue()
+        self.paused = False
 
     def start(self):
         self.playing = True
@@ -200,6 +210,12 @@ class Player(DataSource):
         for timestamp, data in self.data:
             if not self.playing:
                 return
+            if self.paused:
+                pause_time = time.time()
+                while self.paused:
+                    time.sleep(0.1)
+                time_diff = time.time() - pause_time
+                start_time += time_diff
             time_diff = time.time() - start_time
             if time_diff < timestamp:
                 time.sleep(timestamp - time_diff)
@@ -208,6 +224,16 @@ class Player(DataSource):
             else:
                 self.queue.put(data)
         logging.info("Player looped.")
+        
+    def pause(self):
+        """Pause or resume the playback."""
+        self.paused = not self.paused
+        if self.paused:
+            logging.info("Player paused.")
+            return True
+        else:
+            logging.info("Player resumed.")
+            return False
 
     def play_loop(self):
         while self.is_playing():
@@ -217,9 +243,110 @@ class Player(DataSource):
     def set_callback(self, callback):
         self.callback = callback
 
-    def get_data_block(self):
+    def get_data_block(self, timeout=0.1):
         try:
-            return self.queue.get(timeout=0.1)
+            return self.queue.get(timeout=timeout)
+        except queue.Empty:
+            return None
+    
+    def get_data_block_nowait(self):
+        try:
+            return self.queue.get_nowait()
+        except queue.Empty:
+            return None
+
+
+class Synchronizer(DataSource):
+    def __init__(self, callbacks=[]):
+        self.running = False
+        self.thread = None
+        self.callbacks = callbacks
+        self.queue = queue.Queue()
+        self.decoder = ViveDecoder()
+        self.encoder = ViveEncoder()
+
+    def start(self):
+        if self.running:
+            logging.warning("Synchronizer already running.")
+            return False
+        self.running = True
+        self.thread = threading.Thread(target=self.run, daemon=True)
+        self.thread.start()
+        logging.info("Synchronizer started.")
+        return True
+
+    def stop(self):
+        self.running = False
+        if self.thread:
+            self.thread.join()
+        logging.info("Synchronizer stopped.")
+
+    def close(self):
+        self.stop()
+        logging.info("Synchronizer closed.")
+
+    def run(self):
+        while self.running:
+            self.sync()
+            
+    def add_callback(self, callback: dict):
+        """Add a callback function to the synchronizer."""
+        for cb in self.callbacks:
+            if cb["name"] == callback["name"]:
+                logging.warning(
+                    f"Callback with name {callback['name']} already exists. Overwriting."
+                )
+                self.callbacks.remove(cb)
+        self.callbacks.append(callback)
+        
+    def remove_callback(self, name):
+        """Remove a callback function from the synchronizer."""
+        for cb in self.callbacks:
+            if cb["name"] == name:
+                self.callbacks.remove(cb)
+                break
+        else:
+            logging.warning(f"Callback with name {callback['name']} not found.")
+        
+            
+    def sync(self):
+        # Get data from all sources
+        data = [cb["callback"](cb["timeout"]) for cb in self.callbacks]
+        
+        tracker_names = []
+        all_trackers = []
+        
+        for d in data:
+            if d is not None:
+                self.decoder.decode(d)
+                tracker_data = self.decoder.vive_trackers
+                # combine all trackers
+                # overwrite trackers with the same name
+                for tracker in tracker_data:
+                    name = tracker["name"]
+                    if name in tracker_names:
+                        # overwrite the tracker
+                        index = tracker_names.index(name)
+                        all_trackers[index] = tracker
+                    else:
+                        tracker_names.append(name)
+                        all_trackers.append(tracker)
+        # Encode the data
+        if all_trackers is not None and len(all_trackers) > 0:
+            self.encoder.vive_trackers = all_trackers
+            encoded_data = self.encoder.encode()
+            self.queue.put(encoded_data)
+        
+        
+    def get_data_block(self, timeout=0.1):
+        try:
+            return self.queue.get(timeout=timeout)
+        except queue.Empty:
+            return None
+    
+    def get_data_block_nowait(self):
+        try:
+            return self.queue.get_nowait()
         except queue.Empty:
             return None
 

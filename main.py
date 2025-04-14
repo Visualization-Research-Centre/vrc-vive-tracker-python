@@ -6,7 +6,7 @@ from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
 
-from src.sources import UDPReceiverQ, Player
+from src.sources import UDPReceiverQ, Player, Synchronizer
 from src.senders import UDPSenderQ
 from src.recorder import Recorder
 from src.processor import Processor
@@ -45,6 +45,7 @@ class App(tk.Tk):
         self.receiver = None
         self.processor = None
         self.src = None
+        self.synchronizer = None
 
         if config:
             # Load configuration from file
@@ -159,9 +160,26 @@ class App(tk.Tk):
         self.load_data_label.grid(row=2, column=1, padx=5, pady=5, sticky="w")
 
         self.btn_play = ttk.Button(
-            button_frame, text="Play Data", command=self.handle_process_button
+            button_frame, text="Run", command=self.handle_process_button
         )
         self.btn_play.grid(row=3, column=0, padx=5, pady=5, sticky="w")
+
+        self.btn_pause = ttk.Button(
+            button_frame, text="Pause", command=self.handle_pause_button
+        )
+        self.btn_pause.grid(row=3, column=1, padx=5, pady=5, sticky="w")
+
+        self.sync_with_receiver_var = tk.IntVar()
+        self.sync_with_receiver_checkbox = ttk.Checkbutton(
+            button_frame,
+            text="Sync with Receiver",
+            variable=self.sync_with_receiver_var,
+            command=self.handle_sync_with_receiver_checkbox,
+        )
+        self.sync_with_receiver_checkbox.grid(
+            row=3, column=2, padx=5, pady=5, sticky="w"
+        )
+        self.sync_with_receiver_var.set(1)
 
         # Process frame
         process_frame = ttk.LabelFrame(self, text="Process")
@@ -264,37 +282,55 @@ class App(tk.Tk):
         self.visualisation_frame = ttk.LabelFrame(self, text="Visualisation")
         self.visualisation_frame.grid(row=3, column=0, padx=10, pady=5, sticky="ew")
 
+        self.visualisation_ctrl_frame = ttk.Frame(self.visualisation_frame)
+        self.visualisation_ctrl_frame.grid(row=0, column=0, padx=0, pady=0, sticky="ew")
+
         self.enable_visualisation_var = tk.IntVar()
         self.enable_visualisation_checkbox = ttk.Checkbutton(
-            self.visualisation_frame,
+            self.visualisation_ctrl_frame,
             text="Enable",
             variable=self.enable_visualisation_var,
-            command=self.handle_visualisation_checkbox
+            command=self.handle_visualisation_checkbox,
         )
         self.enable_visualisation_checkbox.grid(
             row=0, column=0, padx=5, pady=5, sticky="w"
         )
         self.enable_visualisation_var.set(1)
-        
-        
+
         # dropdown
-        self.dropdown_label = ttk.Label(self.visualisation_frame, text="Select Visualisation:")
+        self.dropdown_label = ttk.Label(
+            self.visualisation_ctrl_frame, text="Select Visualisation:"
+        )
         self.dropdown_label.grid(row=0, column=1, padx=5, pady=5, sticky="w")
         self.dropdown_var = tk.StringVar()
         self.dropdown_var.set("Blobs")
         self.dropdown = ttk.Combobox(
-            self.visualisation_frame,
+            self.visualisation_ctrl_frame,
             textvariable=self.dropdown_var,
-            values=["all_in_radius", "unique", "unique_w_tracing", "nearest"],
+            values=["None", "all_in_radius", "unique", "unique_w_tracing", "nearest"],
             state="readonly",
         )
         self.dropdown.grid(row=0, column=2, padx=5, pady=5, sticky="w")
         self.dropdown.bind("<<ComboboxSelected>>", self.handle_visualisation_selection)
-        
         self.dropdown.current(0)
 
+        # draw blobs
+        self.visualize_blobs_var = tk.IntVar()
+        self.visualize_blobs_checkbox = ttk.Checkbutton(
+            self.visualisation_ctrl_frame,
+            text="Draw Blobs",
+            variable=self.visualize_blobs_var,
+            command=lambda: (
+                self.processor.set_draw_blobs(self.visualize_blobs_var.get())
+                if self.processor
+                else None
+            ),
+        )
+        self.visualize_blobs_checkbox.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        self.visualize_blobs_var.set(1)
+
         self.canvas = tk.Canvas(
-            self.visualisation_frame, width=500, height=500, bg="white"
+            self.visualisation_frame, width=400, height=400, bg="white"
         )
         self.canvas.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
 
@@ -305,6 +341,7 @@ class App(tk.Tk):
         self.update_state("Idle")
         self.update_augment_slider(None)
         self.update_compute_blobs_slider(None)
+        self.handle_visualisation_selection(None)
 
     def update_state(self, new_state):
 
@@ -331,22 +368,25 @@ class App(tk.Tk):
             self.btn_load.config(state=tk.NORMAL)
             self.btn_play.config(text="Run")
             self.btn_play.config(state=tk.NORMAL)
+            self.btn_pause.config(state=tk.DISABLED)
             if is_load_file_path_valid:
                 self.load_data_label.config(text=self.trim_path(self.file_path))
             else:
-                self.load_data_label.config(text="No data loaded. Using receiver.")
+                self.load_data_label.config(text="No data loaded.")
 
         elif self.state == self.states[1]:  # recording
             self.btn_play.config(state=tk.DISABLED)
             self.btn_save.config(state=tk.DISABLED)
             self.btn_record.config(text="Stop")
             self.connect_checkbox.config(state=tk.DISABLED)
+            self.btn_pause.config(state=tk.DISABLED)
 
         elif self.state == self.states[2]:  # playing
             self.btn_load.config(state=tk.DISABLED)
             self.btn_play.config(text="Stop")
             self.btn_record.config(state=tk.DISABLED)
             self.connect_checkbox.config(state=tk.DISABLED)
+            self.btn_pause.config(state=tk.NORMAL)
 
         if self.state == self.states[3]:  # testing
             pass
@@ -375,8 +415,8 @@ class App(tk.Tk):
             self.receiver.close()
         if self.sender:
             self.sender.close()
-        if self.src:
-            self.src.close()
+        if self.synchronizer:
+            self.synchronizer.close()
 
     ### CONNECTION
 
@@ -501,6 +541,35 @@ class App(tk.Tk):
             self.save_file_path = None
         self.update_state(self.state)
 
+    def handle_sync_with_receiver_checkbox(self):
+        if self.sync_with_receiver_var.get():
+            if self.processor:
+                if self.receiver:
+                    self.receiver.close()
+                self.receiver = UDPReceiverQ(
+                    ip=self.receiver_ip, port=self.receiver_port
+                )
+                if not self.receiver.start():
+                    messagebox.showerror(
+                        "Error", "Failed to start receiver. Check the IP and Port."
+                    )
+                    return
+                if self.synchronizer:
+                    self.synchronizer.add_callback(
+                        {
+                            "name": "receiver",
+                            "callback": self.receiver.get_data_block,
+                            "timeout": 0.1,
+                        }
+                    )
+                    logging.info("Sync with Receiver enabled.")
+        else:
+            if self.processor:
+                if self.receiver:
+                    if self.synchronizer:
+                        self.synchronizer.remove_callback("receiver")
+                        logging.info("Sync with Receiver disabled.")
+
     #### PROCESSING
 
     def handle_process_button(self):
@@ -522,27 +591,48 @@ class App(tk.Tk):
             )
             return
 
-        # select source
-        self.src = None
+        self.synchronizer = Synchronizer()
+
         if self.file_path:
-            self.src = self.player
-            self.src.load(self.file_path)
-        else:
-            self.src = UDPReceiverQ(ip=self.receiver_ip, port=self.receiver_port)
-        if not self.src.start():
-            messagebox.showerror(
-                "Error", "Failed to start source. Check the IP and Port."
+            self.player.load(self.file_path)
+            if not self.player.start():
+                messagebox.showerror("Error", "Failed to start Player.")
+                return
+            self.synchronizer.add_callback(
+                {
+                    "name": "player",
+                    "callback": self.player.get_data_block,
+                    "timeout": 0.1,
+                }
             )
+
+        if self.sync_with_receiver_var.get() or self.file_path is None:
+            self.receiver = UDPReceiverQ(ip=self.receiver_ip, port=self.receiver_port)
+            if not self.receiver.start():
+                messagebox.showerror(
+                    "Error", "Failed to start receiver. Check the IP and Port."
+                )
+                return
+            self.synchronizer.add_callback(
+                {
+                    "name": "receiver",
+                    "callback": self.receiver.get_data_block,
+                    "timeout": 0.1,
+                }
+            )
+
+        if not self.synchronizer.start():
+            messagebox.showerror("Error", "Failed to start Synchronizer.")
             return
 
         # start the processor
         self.processor = Processor(
-            callback_data=self.src.get_data_block,
+            callback_data=self.synchronizer.get_data_block,
             callback=self.sender.update,
             bypass=self.bypass_processor,
             debug=self.debug,
             canvas=self.canvas,
-            config=self.config_data
+            config=self.config_data,
         )
         self.processor.set_num_augmentations(self.augment_slider_value)
         self.processor.set_radius(self.compute_blobs_slider_value)
@@ -550,9 +640,7 @@ class App(tk.Tk):
             logging.info("Bypassing processor.")
         else:
             logging.info(
-                "Processing data with {} augmentations and {}m radius".format(
-                    self.augment_slider_value, self.compute_blobs_slider_value
-                )
+                f"Processing data with {self.augment_slider_value} augmentations and {self.compute_blobs_slider_value}m radius"
             )
             if self.ignore_vive_trackers:
                 logging.info("Ignoring certain vive tracker names.")
@@ -573,6 +661,13 @@ class App(tk.Tk):
     def stop_processing(self):
         self.close_all_actors()
         self.update_state("Idle")
+
+    def handle_pause_button(self):
+        if self.player:
+            if self.player.pause():
+                self.btn_pause.config(text="Play")
+            else:
+                self.btn_pause.config(text="Pause")
 
     def update_augment_slider(self, event):
         self.augment_slider_value = int(self.augment_slider.get())
@@ -652,7 +747,6 @@ class App(tk.Tk):
         if self.processor:
             logging.info(f"Visualisation mode: {self.dropdown_var.get()}")
             self.processor.set_connection_visualisation(self.dropdown_var.get())
-
 
     ### UTILS
 

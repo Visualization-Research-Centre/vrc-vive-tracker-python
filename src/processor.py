@@ -63,7 +63,10 @@ class Processor:
         """Set the visualisation mode."""
         self.visualizer.set_connection_visualisation(type)
         
-
+    def set_draw_blobs(self, draw_blobs):
+        """Set whether to draw blobs or not."""
+        self.visualizer.set_draw_blobs(draw_blobs)
+    
     def start(self):
         if self.running:
             logging.warning("Processor already running.")
@@ -101,7 +104,11 @@ class Processor:
             # decode the data (find the trackers)
             self.decoder.decode(data)
             tracker_data = self.decoder.vive_trackers
-
+            
+            if tracker_data is None or len(tracker_data) == 0:
+                logging.warning("No trackers found in the decoded data.")
+                return None
+            
             # augment the data
             if self.augment_data:
                 tracker_data = self.augmentor.augment(
@@ -153,7 +160,7 @@ class Processor:
                         y = tracker["position"][2]
                         trackers.extend([x,y])
                 probs, label = self.classifier.predict(trackers)
-                # logging.info(f"Class: {label} ({probs})")
+                logging.info(f"Class: {label} ({probs})")
 
             if self.visualize:
                 self.visualizer.update_canvas(blobs, tracker_data, radius=self.radius)
