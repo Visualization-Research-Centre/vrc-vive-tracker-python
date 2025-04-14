@@ -8,29 +8,84 @@ class ViveVisualizer:
         self.blobs = []
         self.trackers = []
         self.connection_visualisation = "None"
+        self.range_min = -6
+        self.range_max = 6
+        self.draw_blobs = True
         
     def set_connection_visualisation(self, type):
         """Set the visualisation mode."""
         self.connection_visualisation = type
+        
+    def set_draw_blobs(self, draw_blobs):
+        """Set whether to draw blobs or not."""
+        self.draw_blobs = draw_blobs
+
+    def transform_to_polar(self, x, y):
+        """Convert Cartesian coordinates to polar coordinates."""
+        r = np.sqrt(x**2 + y**2)
+        theta = np.arctan2(y, x)
+        return r, theta
+    
+    def transform_to_cartesian(self, r, theta):
+        
+        """Convert polar coordinates to Cartesian coordinates."""
+        x = r * np.cos(theta)
+        y = r * np.sin(theta)
+        return x, y
+    
+    def push_magnitude(self, x, y, magnitude):
+        """Push the magnitude to the x and y coordinates."""
+        r, theta = self.transform_to_polar(x, y)
+        r += magnitude
+        x, y = self.transform_to_cartesian(r, theta)
+        return x, y
+    
+
+    def create_circle(self, canvas, x, y, r, **kwargs): #center coordinates, radius
+        x0 = x - r
+        y0 = y - r
+        x1 = x + r
+        y1 = y + r
+        return canvas.create_oval(x0, y0, x1, y1, **kwargs)
+
+    
+    def map_to_image_coordinates(self, x, y, width, height, range_min, range_max):
+        """Map the x and y coordinates to image coordinates."""
+        x = (x - range_min) / (range_max - range_min) * width
+        y = height - (y - range_min) / (range_max - range_min) * height
+        return x, y
 
     def update_canvas(self, blobs, trackers, radius):
         """blobs and tracker are in the range of [-4, 4]"""
         width = self.canvas.winfo_width()
         height = self.canvas.winfo_height()
         self.canvas.delete("all")
-        # draw the blobs
-        for blob in blobs:
-            x, y = blob[0], blob[1]
-            r = blob[2] * width / 16 * radius
-            x = (x + 4) / 8 * width
-            y = height - (y + 4) / 8 * height
-            self.canvas.create_oval(x - r, y - r, x + r, y + r, fill="red", outline="")
-        connectors = []
+        if self.draw_blobs:
+            # draw the blobs
+            for blob in blobs:
+                x, y = blob[0], blob[1]
+                # x, y = self.push_magnitude(x, y, radius)
+                r = blob[2] * width / 16 * radius
+                x, y = self.map_to_image_coordinates(x, y, width, height, self.range_min, self.range_max)
+                self.canvas.create_oval(x - r, y - r, x + r, y + r, fill="red", outline="")
+            connectors = []
+        
+        # draw a thin lined circle around the parameter
+        self.create_circle(
+            self.canvas,
+            width / 2,
+            height / 2,
+            self.range_max * width / 16,
+            outline="black",
+            width=1,
+        )
+        
         # draw the trackers
+        connectors = []
         for tracker in trackers:
             x, y = tracker["position"][0], tracker["position"][2]
-            x = (x + 4) / 8 * width
-            y = height - (y + 4) / 8 * height
+            # x, y = self.push_magnitude(x, y, radius)
+            x, y = self.map_to_image_coordinates(x, y, width, height, self.range_min, self.range_max)
             self.canvas.create_oval(x - 5, y - 5, x + 5, y + 5, fill="blue", outline="")
             self.canvas.create_text(
                 x, y - 10, text=tracker["name"], fill="black", font=("Arial", 8)
