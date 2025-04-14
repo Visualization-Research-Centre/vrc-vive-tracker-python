@@ -1,7 +1,6 @@
-/recordings
+
 /venv
 /cs
-*.bin
 *.txt
 
 .DS_Store
