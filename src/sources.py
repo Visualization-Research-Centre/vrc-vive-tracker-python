@@ -303,11 +303,17 @@ class Synchronizer(DataSource):
         """Remove a callback function from the synchronizer."""
         for cb in self.callbacks:
             if cb["name"] == name:
+                logging.info(f"Removing callback: {cb}")
                 self.callbacks.remove(cb)
                 break
         else:
             logging.warning(f"Callback with name {callback['name']} not found.")
-        
+    
+    def clear_callbacks(self):
+        """Clear all callback functions from the synchronizer."""
+        logging.info(f"Callbacks: {self.callbacks}")
+        for cb in self.callbacks:
+            self.remove_callback(cb["name"])
             
     def sync(self):
         # Get data from all sources
@@ -317,6 +323,8 @@ class Synchronizer(DataSource):
         all_trackers = []
         
         for d in data:
+            # if d is None:
+            #     return
             if d is not None:
                 self.decoder.decode(d)
                 tracker_data = self.decoder.vive_trackers
@@ -336,7 +344,6 @@ class Synchronizer(DataSource):
             self.encoder.vive_trackers = all_trackers
             encoded_data = self.encoder.encode()
             self.queue.put(encoded_data)
-        
         
     def get_data_block(self, timeout=0.1):
         try:

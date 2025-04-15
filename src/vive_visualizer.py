@@ -1,16 +1,33 @@
 import numpy as np
 import logging
+import threading
+import queue
 
 
 class ViveVisualizer:
-    def __init__(self, canvas):
+    def __init__(self, canvas, root):
         self.canvas = canvas
         self.blobs = []
         self.trackers = []
         self.connection_visualisation = "None"
         self.range_min = -6
         self.range_max = 6
-        self.draw_blobs = True
+        self.draw_blobs = False
+        self.thread = None
+        self.running = False
+        self.queue = queue.Queue()
+        self.radius = 1
+        self.visualize = True
+        self.root = root
+        
+        self.canvas.update_idletasks()
+        self.canvas.update()
+        self.width = self.canvas.winfo_width()
+        self.height = self.canvas.winfo_height()
+        
+        
+    def set_visualize(self, vis):
+        self.visualize = vis
         
     def set_connection_visualisation(self, type):
         """Set the visualisation mode."""
@@ -19,6 +36,10 @@ class ViveVisualizer:
     def set_draw_blobs(self, draw_blobs):
         """Set whether to draw blobs or not."""
         self.draw_blobs = draw_blobs
+        
+    def set_radius(self, radius):
+        """Set the radius for the visualizer."""
+        self.radius = radius
 
     def transform_to_polar(self, x, y):
         """Convert Cartesian coordinates to polar coordinates."""
@@ -54,11 +75,43 @@ class ViveVisualizer:
         x = (x - range_min) / (range_max - range_min) * width
         y = height - (y - range_min) / (range_max - range_min) * height
         return x, y
+    
+    def draw_coordinate_system(self):
+        """Draw the coordinate system on the canvas."""
+        width = self.width
+        height = self.height
+        
+        # draw a thin lined circle around the perimeter
+        self.create_circle(
+            self.canvas,
+            width / 2,
+            height / 2,
+            self.range_max * width / 16,
+            outline="black",
+            width=1,
+        )
+        
+        # draw the coordinate system
+        self.canvas.create_line(
+            0, height / 2, width, height / 2, fill="black", dash=(2, 2)
+        )
+        self.canvas.create_line(
+            width / 2, 0, width / 2, height, fill="black", dash=(2, 2)
+        )
+        # draw the center
+        self.canvas.create_oval(
+            width / 2 - 5,
+            height / 2 - 5,
+            width / 2 + 5,
+            height / 2 + 5,
+            fill="black",
+            outline="",
+        )
 
     def update_canvas(self, blobs, trackers, radius):
         """blobs and tracker are in the range of [-4, 4]"""
-        width = self.canvas.winfo_width()
-        height = self.canvas.winfo_height()
+        width = self.width
+        height = self.height
         self.canvas.delete("all")
         if self.draw_blobs:
             # draw the blobs
@@ -70,23 +123,16 @@ class ViveVisualizer:
                 self.canvas.create_oval(x - r, y - r, x + r, y + r, fill="red", outline="")
             connectors = []
         
-        # draw a thin lined circle around the parameter
-        self.create_circle(
-            self.canvas,
-            width / 2,
-            height / 2,
-            self.range_max * width / 16,
-            outline="black",
-            width=1,
-        )
+        self.draw_coordinate_system()
         
         # draw the trackers
         connectors = []
         for tracker in trackers:
+            col = "green" if tracker["is_tracked"] else "blue"
             x, y = tracker["position"][0], tracker["position"][2]
             # x, y = self.push_magnitude(x, y, radius)
             x, y = self.map_to_image_coordinates(x, y, width, height, self.range_min, self.range_max)
-            self.canvas.create_oval(x - 5, y - 5, x + 5, y + 5, fill="blue", outline="")
+            self.canvas.create_oval(x - 5, y - 5, x + 5, y + 5, fill=col, outline="")
             self.canvas.create_text(
                 x, y - 10, text=tracker["name"], fill="black", font=("Arial", 8)
             )
@@ -103,22 +149,6 @@ class ViveVisualizer:
         elif self.connection_visualisation == "unique_w_tracing":
             self.unique_connection_w_tracing(connectors)
 
-        # draw the coordinate system
-        self.canvas.create_line(
-            0, height / 2, width, height / 2, fill="black", dash=(2, 2)
-        )
-        self.canvas.create_line(
-            width / 2, 0, width / 2, height, fill="black", dash=(2, 2)
-        )
-        # draw the center
-        self.canvas.create_oval(
-            width / 2 - 5,
-            height / 2 - 5,
-            width / 2 + 5,
-            height / 2 + 5,
-            fill="green",
-            outline="",
-        )
 
     def unique_connection(self, positions):
 
@@ -227,3 +257,51 @@ class ViveVisualizer:
         """Draw a line between two points on the canvas."""
         # Convert the coordinates to the canvas coordinate system
         self.canvas.create_line(x1, y1, x2, y2, fill="black", width=2)
+
+
+    def start(self):
+        """Start the visualizer thread."""
+        if self.thread is None or not self.thread.is_alive():
+            self.running = True
+            self.thread = threading.Thread(target=self.run)
+            self.thread.start()
+        else:
+            logging.warning("Visualizer thread is already running.")
+        return True
+    
+    def stop(self):
+        """Stop the visualizer thread."""
+        self.running = False
+        if self.thread is not None:
+            self.thread.join()
+            self.thread = None
+        logging.info("Visualizer thread stopped.")
+        
+    def run(self):
+        """Run the visualizer thread."""
+        odd = False
+        self.draw_coordinate_system()
+        while self.running:
+            
+            data = self.queue.get()
+            if data is None:
+                continue
+            self.blobs, self.trackers = data
+            
+            odd = not odd
+            if odd:
+                continue
+            
+            # Update the canvas with the blobs and trackers
+            if self.visualize:
+                self.update_canvas(self.blobs, self.trackers, self.radius)
+                self.canvas.after(10)
+            
+    def close(self):
+        """Close the visualizer."""
+        self.stop()
+        logging.info("Visualizer closed.")
+        
+    def update(self, blobs, trackers):
+        """Push data to the visualizer."""
+        self.queue.put((blobs, trackers))

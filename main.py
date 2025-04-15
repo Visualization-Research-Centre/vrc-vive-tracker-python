@@ -10,6 +10,7 @@ from src.sources import UDPReceiverQ, Player, Synchronizer
 from src.senders import UDPSenderQ
 from src.recorder import Recorder
 from src.processor import Processor
+from src.vive_visualizer import ViveVisualizer
 
 
 logging.basicConfig(
@@ -64,13 +65,34 @@ class App(tk.Tk):
                 self.ignore_vive_tracker_names = self.config_data.get(
                     "ignore_vive_tracker_names", self.ignore_vive_tracker_names
                 )
+                
+        
 
         # states
         self.states = ["Idle", "Recording", "Playing", "Testing"]
         self.state = self.states[0]
         self.init_ui()
-
+        
         self.player = Player()
+        self.visualizer = ViveVisualizer(self.canvas, self)
+        self.visualizer.start()
+        
+        # set UI
+        self.dropdown.current(0)
+        self.enable_visualisation_var.set(1)
+        self.ignore_vive_tracker_names_var.set(1)
+        self.compute_blobs_slider.set(10)
+        self.augment_var.set(0)
+        self.sync_with_receiver_var.set(0)
+        self.visualize_blobs_var.set(0)
+        
+        
+        self.update_state("Idle")
+        self.update_augment_slider(None)
+        self.update_compute_blobs_slider(None)
+        self.handle_visualisation_selection(None)
+        self.dropdown_var.set("None")
+        
 
     def init_ui(self):
 
@@ -158,6 +180,9 @@ class App(tk.Tk):
 
         self.load_data_label = ttk.Label(button_frame, text="No data loaded.")
         self.load_data_label.grid(row=2, column=1, padx=5, pady=5, sticky="w")
+        
+        play_frame = ttk.Frame(button_frame)
+        play_frame.grid(row=3, column=1, padx=5, pady=5, sticky="w")
 
         self.btn_play = ttk.Button(
             button_frame, text="Run", command=self.handle_process_button
@@ -165,13 +190,13 @@ class App(tk.Tk):
         self.btn_play.grid(row=3, column=0, padx=5, pady=5, sticky="w")
 
         self.btn_pause = ttk.Button(
-            button_frame, text="Pause", command=self.handle_pause_button
+            play_frame, text="Pause", command=self.handle_pause_button
         )
         self.btn_pause.grid(row=3, column=1, padx=5, pady=5, sticky="w")
 
         self.sync_with_receiver_var = tk.IntVar()
         self.sync_with_receiver_checkbox = ttk.Checkbutton(
-            button_frame,
+            play_frame,
             text="Sync with Receiver",
             variable=self.sync_with_receiver_var,
             command=self.handle_sync_with_receiver_checkbox,
@@ -179,7 +204,6 @@ class App(tk.Tk):
         self.sync_with_receiver_checkbox.grid(
             row=3, column=2, padx=5, pady=5, sticky="w"
         )
-        self.sync_with_receiver_var.set(1)
 
         # Process frame
         process_frame = ttk.LabelFrame(self, text="Process")
@@ -199,7 +223,6 @@ class App(tk.Tk):
             command=self.handle_augment_checkbox,
         )
         self.augment_checkbox.grid(row=0, column=1, padx=5, pady=5, sticky="w")
-        self.augment_var.set(0)
 
         self.augment_slider = ttk.Scale(
             slider_frame,
@@ -228,7 +251,6 @@ class App(tk.Tk):
         self.compute_blobs_slider_label.grid(
             row=3, column=1, padx=5, pady=5, sticky="w"
         )
-        self.compute_blobs_slider.set(10)
         self.compute_blobs_slider.bind(
             "<ButtonRelease-1>", self.update_compute_blobs_slider
         )
@@ -245,7 +267,6 @@ class App(tk.Tk):
         self.ignore_vive_tracker_names_checkbox.grid(
             row=7, column=0, padx=5, pady=5, sticky="w"
         )
-        self.ignore_vive_tracker_names_var.set(1)
 
         self.ignore_vive_tracker_names_entry = ttk.Entry(process_frame, width=34)
         self.ignore_vive_tracker_names_entry.grid(
@@ -272,7 +293,8 @@ class App(tk.Tk):
 
         self.bypass_processor_var = tk.IntVar()
         self.bypass_processor_checkbox = ttk.Checkbutton(
-            process_frame, text="Bypass", variable=self.bypass_processor_var
+            process_frame, text="Bypass", variable=self.bypass_processor_var,
+            command= lambda: ( self.processor.set_bypass(self.bypass_processor_var.get()) if self.processor else None ) 
         )
         self.bypass_processor_checkbox.grid(
             row=10, column=0, padx=5, pady=5, sticky="w"
@@ -295,7 +317,6 @@ class App(tk.Tk):
         self.enable_visualisation_checkbox.grid(
             row=0, column=0, padx=5, pady=5, sticky="w"
         )
-        self.enable_visualisation_var.set(1)
 
         # dropdown
         self.dropdown_label = ttk.Label(
@@ -303,7 +324,6 @@ class App(tk.Tk):
         )
         self.dropdown_label.grid(row=0, column=1, padx=5, pady=5, sticky="w")
         self.dropdown_var = tk.StringVar()
-        self.dropdown_var.set("Blobs")
         self.dropdown = ttk.Combobox(
             self.visualisation_ctrl_frame,
             textvariable=self.dropdown_var,
@@ -312,7 +332,6 @@ class App(tk.Tk):
         )
         self.dropdown.grid(row=0, column=2, padx=5, pady=5, sticky="w")
         self.dropdown.bind("<<ComboboxSelected>>", self.handle_visualisation_selection)
-        self.dropdown.current(0)
 
         # draw blobs
         self.visualize_blobs_var = tk.IntVar()
@@ -321,13 +340,10 @@ class App(tk.Tk):
             text="Draw Blobs",
             variable=self.visualize_blobs_var,
             command=lambda: (
-                self.processor.set_draw_blobs(self.visualize_blobs_var.get())
-                if self.processor
-                else None
+                self.visualizer.set_draw_blobs(self.visualize_blobs_var.get())
             ),
         )
         self.visualize_blobs_checkbox.grid(row=2, column=0, padx=5, pady=5, sticky="w")
-        self.visualize_blobs_var.set(1)
 
         self.canvas = tk.Canvas(
             self.visualisation_frame, width=400, height=400, bg="white"
@@ -338,10 +354,6 @@ class App(tk.Tk):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
 
-        self.update_state("Idle")
-        self.update_augment_slider(None)
-        self.update_compute_blobs_slider(None)
-        self.handle_visualisation_selection(None)
 
     def update_state(self, new_state):
 
@@ -372,7 +384,7 @@ class App(tk.Tk):
             if is_load_file_path_valid:
                 self.load_data_label.config(text=self.trim_path(self.file_path))
             else:
-                self.load_data_label.config(text="No data loaded.")
+                self.load_data_label.config(text="No data loaded. Using receiver.")
 
         elif self.state == self.states[1]:  # recording
             self.btn_play.config(state=tk.DISABLED)
@@ -416,6 +428,7 @@ class App(tk.Tk):
         if self.sender:
             self.sender.close()
         if self.synchronizer:
+            self.synchronizer.clear_callbacks()
             self.synchronizer.close()
 
     ### CONNECTION
@@ -629,14 +642,15 @@ class App(tk.Tk):
         self.processor = Processor(
             callback_data=self.synchronizer.get_data_block,
             callback=self.sender.update,
-            bypass=self.bypass_processor,
-            debug=self.debug,
-            canvas=self.canvas,
+            callback_vis=self.visualizer.update,
             config=self.config_data,
         )
         self.processor.set_num_augmentations(self.augment_slider_value)
         self.processor.set_radius(self.compute_blobs_slider_value)
+        self.processor.set_debug(self.debug)
+        
         if self.bypass_processor:
+            self.processor.set_bypass(True)
             logging.info("Bypassing processor.")
         else:
             logging.info(
@@ -692,6 +706,7 @@ class App(tk.Tk):
         )
         if self.processor:
             self.processor.set_radius(self.compute_blobs_slider_value)
+            self.visualizer.set_radius(self.compute_blobs_slider_value)
 
     def handle_ignore_vive_trackers(self):
         if self.ignore_vive_tracker_names_var.get():
@@ -735,18 +750,15 @@ class App(tk.Tk):
 
     def handle_visualisation_checkbox(self):
         if self.enable_visualisation_var.get():
-            if self.processor:
-                logging.info("Visualisation enabled.")
-                self.processor.set_visualize(True)
+            logging.info("Visualisation enabled.")
+            self.visualizer.set_visualize(True)
         else:
-            if self.processor:
-                logging.info("Visualisation disabled.")
-                self.processor.set_visualize(False)
+            logging.info("Visualisation disabled.")
+            self.visualizer.set_visualize(False)
 
     def handle_visualisation_selection(self, event):
-        if self.processor:
-            logging.info(f"Visualisation mode: {self.dropdown_var.get()}")
-            self.processor.set_connection_visualisation(self.dropdown_var.get())
+        logging.info(f"Visualisation mode: {self.dropdown_var.get()}")
+        self.visualizer.set_connection_visualisation(self.dropdown_var.get())
 
     ### UTILS
 
