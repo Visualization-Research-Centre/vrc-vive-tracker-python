@@ -134,15 +134,16 @@ class Processor:
             
             # classify the data
             if self.classifier:
-                # preprocess the data
-                trackers = []
-                for tracker in tracker_data:
-                    if tracker["is_tracked"]:
-                        x = tracker["position"][0]
-                        y = tracker["position"][2]
-                        trackers.extend([x,y])
-                probs, label = self.classifier.predict(trackers)
-                logging.info(f"Class: {label} ({probs})")
+                if False:
+                    # preprocess the data
+                    trackers = []
+                    for tracker in tracker_data:
+                        if tracker["is_tracked"]:
+                            x = tracker["position"][0]
+                            y = tracker["position"][2]
+                            trackers.extend([x,y])
+                    probs, label = self.classifier.predict(trackers)
+                    logging.info(f"Class: {label} ({probs})")
 
             if self.callback_vis:
                 self.callback_vis(blobs, tracker_data)
