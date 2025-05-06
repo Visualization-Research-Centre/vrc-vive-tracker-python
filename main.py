@@ -197,7 +197,7 @@ class App(tk.Tk):
         self.sync_with_receiver_var = tk.IntVar()
         self.sync_with_receiver_checkbox = ttk.Checkbutton(
             play_frame,
-            text="Sync with Receiver",
+            text="Sync",
             variable=self.sync_with_receiver_var,
             command=self.handle_sync_with_receiver_checkbox,
         )
@@ -240,16 +240,16 @@ class App(tk.Tk):
 
         # BLOBS
         self.compute_blobs_label = ttk.Label(slider_frame, text="Blobs")
-        self.compute_blobs_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        self.compute_blobs_label.grid(row=0, column=2, padx=5, pady=5, sticky="w")
 
         self.compute_blobs_slider = ttk.Scale(
             slider_frame, from_=1, to=40, orient=tk.HORIZONTAL
         )
-        self.compute_blobs_slider.grid(row=3, column=0, padx=5, pady=5, sticky="w")
+        self.compute_blobs_slider.grid(row=1, column=2, padx=5, pady=5, sticky="w")
 
         self.compute_blobs_slider_label = ttk.Label(slider_frame)
         self.compute_blobs_slider_label.grid(
-            row=3, column=1, padx=5, pady=5, sticky="w"
+            row=1, column=3, padx=5, pady=5, sticky="w"
         )
         self.compute_blobs_slider.bind(
             "<ButtonRelease-1>", self.update_compute_blobs_slider
@@ -268,7 +268,7 @@ class App(tk.Tk):
             row=7, column=0, padx=5, pady=5, sticky="w"
         )
 
-        self.ignore_vive_tracker_names_entry = ttk.Entry(process_frame, width=34)
+        self.ignore_vive_tracker_names_entry = ttk.Entry(process_frame, width=35)
         self.ignore_vive_tracker_names_entry.grid(
             row=8, column=0, padx=5, pady=5, sticky="ew"
         )
