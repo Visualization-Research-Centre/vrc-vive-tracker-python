@@ -10,8 +10,8 @@ class ViveVisualizer:
         self.blobs = []
         self.trackers = []
         self.connection_visualisation = "None"
-        self.range_min = -6
-        self.range_max = 6
+        self.range_min = -4
+        self.range_max = 4
         self.draw_blobs = False
         self.thread = None
         self.running = False
@@ -19,6 +19,7 @@ class ViveVisualizer:
         self.radius = 1
         self.visualize = True
         self.root = root
+        self.scale = 1 / self.range_max
         
         self.canvas.update_idletasks()
         self.canvas.update()
@@ -46,6 +47,9 @@ class ViveVisualizer:
         r = np.sqrt(x**2 + y**2)
         theta = np.arctan2(y, x)
         return r, theta
+    
+    def normalize(self, x, y):
+        return x * self.scale, y * self.scale
     
     def transform_to_cartesian(self, r, theta):
         
@@ -86,7 +90,7 @@ class ViveVisualizer:
             self.canvas,
             width / 2,
             height / 2,
-            self.range_max * width / 16,
+            width / 2,
             outline="black",
             width=1,
         )
@@ -118,6 +122,7 @@ class ViveVisualizer:
             for blob in blobs:
                 x, y = blob[0], blob[1]
                 # x, y = self.push_magnitude(x, y, radius)
+                # x, y = self.normalize(x, y)
                 r = blob[2] * width / 16 * radius
                 x, y = self.map_to_image_coordinates(x, y, width, height, self.range_min, self.range_max)
                 self.canvas.create_oval(x - r, y - r, x + r, y + r, fill="red", outline="")
@@ -130,6 +135,7 @@ class ViveVisualizer:
         for tracker in trackers:
             col = "green" if tracker["is_tracked"] else "blue"
             x, y = tracker["position"][0], tracker["position"][2]
+            # x, y = self.normalize(x, y)
             # x, y = self.push_magnitude(x, y, radius)
             x, y = self.map_to_image_coordinates(x, y, width, height, self.range_min, self.range_max)
             self.canvas.create_oval(x - 5, y - 5, x + 5, y + 5, fill=col, outline="")

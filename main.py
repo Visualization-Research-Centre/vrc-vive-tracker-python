@@ -282,22 +282,24 @@ class App(tk.Tk):
             "<FocusOut>", self.update_ignore_vive_tracker_names
         )
 
+        self.other_ctrl_frame = ttk.Frame(process_frame)
+        self.other_ctrl_frame.grid(row=9, column=0, padx=0, pady=0, sticky="ew")
         self.debug_var = tk.IntVar()
         self.debug_checkbox = ttk.Checkbutton(
-            process_frame,
+            self.other_ctrl_frame,
             text="Debug Mode",
             variable=self.debug_var,
             command=self.handle_debug_checkbox,
         )
-        self.debug_checkbox.grid(row=9, column=0, padx=5, pady=5, sticky="w")
+        self.debug_checkbox.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
         self.bypass_processor_var = tk.IntVar()
         self.bypass_processor_checkbox = ttk.Checkbutton(
-            process_frame, text="Bypass", variable=self.bypass_processor_var,
+            self.other_ctrl_frame, text="Bypass", variable=self.bypass_processor_var,
             command= lambda: ( self.processor.set_bypass(self.bypass_processor_var.get()) if self.processor else None ) 
         )
         self.bypass_processor_checkbox.grid(
-            row=10, column=0, padx=5, pady=5, sticky="w"
+            row=0, column=1, padx=5, pady=5, sticky="w"
         )
 
         # Visualisation
@@ -320,7 +322,7 @@ class App(tk.Tk):
 
         # dropdown
         self.dropdown_label = ttk.Label(
-            self.visualisation_ctrl_frame, text="Select Visualisation:"
+            self.visualisation_ctrl_frame, text="Visualisation:"
         )
         self.dropdown_label.grid(row=0, column=1, padx=5, pady=5, sticky="w")
         self.dropdown_var = tk.StringVar()
@@ -328,7 +330,7 @@ class App(tk.Tk):
             self.visualisation_ctrl_frame,
             textvariable=self.dropdown_var,
             values=["None", "all_in_radius", "unique", "unique_w_tracing", "nearest"],
-            state="readonly",
+            state="readonly", width=12,
         )
         self.dropdown.grid(row=0, column=2, padx=5, pady=5, sticky="w")
         self.dropdown.bind("<<ComboboxSelected>>", self.handle_visualisation_selection)
@@ -346,9 +348,9 @@ class App(tk.Tk):
         self.visualize_blobs_checkbox.grid(row=2, column=0, padx=5, pady=5, sticky="w")
 
         self.canvas = tk.Canvas(
-            self.visualisation_frame, width=400, height=400, bg="white"
+            self.visualisation_frame, width=250, height=250, bg="white"
         )
-        self.canvas.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
+        self.canvas.grid(row=1, column=0, padx=5, pady=5, sticky="w")
 
         # fill the empty space
         self.columnconfigure(0, weight=1)
