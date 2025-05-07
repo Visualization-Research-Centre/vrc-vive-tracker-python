@@ -20,7 +20,7 @@ class ViveBlobber:
         """
 
         if not positions:
-            return []
+            return [], []
 
         positions = np.array(
             positions
