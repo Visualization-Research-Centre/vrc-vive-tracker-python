@@ -45,8 +45,9 @@ def load_from_bin(file_path):
 if __name__ == "__main__":
 
     # number of ppl
-    no_ppl = 7
+    no_ppl = 8
     recordings = ['circle', 'line', 'random', 'square', 'triangle', 'cross']
+    ignore_list = ['2B9219E9']
     rec_path = "recordings"
     
     with open("recordings/formations.csv", "w", newline="") as csvfile:
@@ -66,6 +67,7 @@ if __name__ == "__main__":
                 continue
 
             decoder = ViveDecoder()
+            decoder.set_ignored_vive_tracker_names(ignore_list)
             
             data = load_from_bin(recording_path)
             
