@@ -95,7 +95,7 @@ def main(no_ppl, rec_path, ignore_list):
                 # timestamp = d[0]
                 # label is the index of the recording
                 label = train_recordings.index(recording)
-                print(f"Processing recording: {recording}, label: {label}")
+                logging.info(f"Processing recording: {recording}, label: {label}")
                 decoder.decode(d[1])
                 trackers = decoder.vive_trackers
                 if trackers is None or len(trackers) == 0:
