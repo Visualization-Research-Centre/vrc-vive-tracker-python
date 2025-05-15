@@ -132,9 +132,7 @@ if __name__ == "__main__":
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
-        handlers=[
-            logging.StreamHandler()
-        ]
+        handlers=[logging.StreamHandler()]
     )
     logging.info("Starting to extract csv from recording...")
     main(no_ppl, rec_path, ignore_list)
