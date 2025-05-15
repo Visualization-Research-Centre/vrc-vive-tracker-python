@@ -41,16 +41,34 @@ def load_from_bin(file_path):
             
     return rec
             
-
-if __name__ == "__main__":
-
-    # number of ppl
-    no_ppl = 8
-    recordings = ['circle', 'line', 'random', 'square', 'triangle', 'cross']
-    ignore_list = ['2B9219E9']
-    rec_path = "recordings"
+def main(no_ppl, rec_path, ignore_list):
+    # check if the path exists
+    if not os.path.exists(rec_path):
+        logging.error(f"Path does not exist: {rec_path}")
+        return
     
-    with open("recordings/formations.csv", "w", newline="") as csvfile:
+    # path to the recordings for training
+    train_path = os.path.join(rec_path, "train")
+
+    # list of recordings
+    train_recordings = [
+        os.path.splitext(file)[0]
+        for file in os.listdir(train_path)
+        if file.endswith(".bin")
+    ]
+
+    # write train_recordings to a config file of form labels: train_recordings
+    config_file = os.path.join(train_path, "train_set.txt")
+    with open(config_file, "w") as f:
+        f.write("labels:\n")
+        for recording in train_recordings:
+            f.write(f"{recording}\n")
+    logging.info(f"Train recordings config file: {config_file}")
+    
+    # file to save the csv
+    csv_file = os.path.join(train_path, "train_set.csv")
+
+    with open(csv_file, "w", newline="") as csvfile:
         # Add a first row with the header 'form_type', 'x{i}, 'y{i}' for each tracker
         header = ["form_type"]
         for i in range(0, no_ppl):
@@ -58,10 +76,9 @@ if __name__ == "__main__":
             header.append(f"y{i}")
         writer = csv.writer(csvfile)
         writer.writerow(header)
-        print(f"Header: {header}")
 
-        for recording in recordings:
-            recording_path = os.path.join(rec_path, f"{recording}.bin")
+        for recording in train_recordings:
+            recording_path = os.path.join(train_path, f"{recording}.bin")
             if not os.path.exists(recording_path):
                 logging.error(f"Recording file not found: {recording_path}")
                 continue
@@ -77,7 +94,7 @@ if __name__ == "__main__":
                     continue
                 # timestamp = d[0]
                 # label is the index of the recording
-                label = recordings.index(recording)
+                label = train_recordings.index(recording)
                 print(f"Processing recording: {recording}, label: {label}")
                 decoder.decode(d[1])
                 trackers = decoder.vive_trackers
@@ -101,3 +118,24 @@ if __name__ == "__main__":
                 writer = csv.writer(csvfile)
                 for row in table:
                     writer.writerow(row)
+
+if __name__ == "__main__":
+
+    # change here
+    # ============================================
+    no_ppl = 20
+    rec_path = "recordings"
+    ignore_list = ['2B9219E9']
+    # ============================================
+
+    # set up logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+        handlers=[
+            logging.FileHandler("extract_csv_from_recording.log"),
+            logging.StreamHandler()
+        ]
+    )
+    
+    main(no_ppl, rec_path, ignore_list)
