@@ -133,9 +133,9 @@ if __name__ == "__main__":
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
         handlers=[
-            logging.FileHandler("extract_csv_from_recording.log"),
             logging.StreamHandler()
         ]
     )
-    
+    logging.info("Starting to extract csv from recording...")
     main(no_ppl, rec_path, ignore_list)
+    logging.info("Finished extracting csv from recording.")
