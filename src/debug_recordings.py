@@ -7,11 +7,23 @@ from vive_decoder import ViveDecoder
 
 class Debugger:
     def __init__(self):
+        self.epsilon = 1e-6
         logging.basicConfig(level=logging.INFO)
 
+    def is_jittering(self, x0, y0, x1, y1):
+        dx = abs(x1 - x0)
+        dy = abs(y1 - y0)
+        # Check if the change in position is significant
+        if self.is_zero_position(dx, dy):
+            return False
+        # if dx and dy are zero (with a small epsilon), we consider it as no jitter
+        if dx <= self.epsilon and dy <= self.epsilon:
+            return False
+
+        return True
+
     def is_zero_position(self, x, y):
-        epsilon = 1e-6
-        return abs(x) <= epsilon and abs(y) <= epsilon
+        return abs(x) <= self.epsilon and abs(y) <= self.epsilon
 
     def debug_binary_file(self, binary_filepath, ignore_tracker_list):
         def load_from_bin(file_path):
@@ -73,10 +85,20 @@ class Debugger:
                 return
 
             row = [timestamp]
+            old_x = old_y = None
             for tracker in trackers:
                 if tracker["is_tracked"]:
                     x = tracker["position"][0]
                     y = tracker["position"][2]
+
+                    if old_x is not None and old_y is not None:
+                        if not self.is_jittering(old_x, old_y, x, y):
+                            logging.warning(
+                                f"Frozen tracker {tracker['name']} at timestamp {timestamp}: "
+                                f"old position ({old_x}, {old_y}), new position ({x}, {y})"
+                            )
+                    old_x = x
+                    old_y = y
 
                     if self.is_zero_position(x, y):
                         logging.warning(
