@@ -9,13 +9,11 @@ class Debugger:
     def __init__(self):
         logging.basicConfig(level=logging.INFO)
 
-    def check_zero_x_y(self, x, y):
+    def is_zero_position(self, x, y):
         epsilon = 1e-6
-        if abs(x) <= epsilon and abs(y) <= epsilon:
-            return True
-        return False
+        return abs(x) <= epsilon and abs(y) <= epsilon
 
-    def generate_from_binary_directory(self, binary_filepath, ignore_tracker_list):
+    def debug_binary_file(self, binary_filepath, ignore_tracker_list):
         def load_from_bin(file_path):
             rec = []
             if not os.path.exists(file_path):
@@ -61,6 +59,8 @@ class Debugger:
         data = load_from_bin(binary_filepath)
 
         table = []
+        zero_position_stats = {}  # {tracker_name: [(timestamp, x, y), ...]}
+
         for d in data:
             if d is None:
                 return
@@ -78,23 +78,34 @@ class Debugger:
                     x = tracker["position"][0]
                     y = tracker["position"][2]
 
-                    x = 0.000001
-                    y = 0.000001
-                    if self.check_zero_x_y(x, y):
-                        logging.error(
-                            f"\nAt timestamp {timestamp}, tracker {tracker['name']} has zero position: x={x}, y={y}. Ignoring this tracker."
+                    if self.is_zero_position(x, y):
+                        logging.warning(
+                            f"\nAt timestamp {timestamp}, tracker {tracker['name']} has zero position: x={x}, y={y}."
                         )
-                        return
+                        if tracker["name"] not in zero_position_stats:
+                            zero_position_stats[tracker["name"]] = []
+                        zero_position_stats[tracker["name"]].append(
+                            (timestamp, x, y))
 
                     row.append(x)
                     row.append(y)
             table.append(row)
-            print(f"\nDecoded data for timestamp {timestamp}: {row}")
+
+        # Print statistics at the end
+        if zero_position_stats:
+            logging.info("\n=== Zero Position Statistics ===")
+            for tracker_name, events in zero_position_stats.items():
+                logging.info(f"Tracker {tracker_name}:")
+                logging.info(f"  Total number of errors: {len(events)}")
+                for timestamp, x, y in events:
+                    logging.info(
+                        f"  Zero position at timestamp {timestamp}: x={x}, y={y}")
+                logging.info()
 
 
 if __name__ == "__main__":
     debugger = Debugger()
-    binary_filepath = "/Users/marlen/projects/hkbu-vive-tracker/recordings/train/random.bin"
+    binary_filepath = "/Users/marlen/projects/hkbu-vive-tracker/recordings/ale_4ppl.bin"
     ignore_tracker_list = []
-    debugger.generate_from_binary_directory(
+    debugger.debug_binary_file(
         binary_filepath, ignore_tracker_list)
