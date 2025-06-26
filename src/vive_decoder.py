@@ -36,8 +36,9 @@ class ViveDecoder:
                 tracker_name = byte_data[index : index + 8].decode("utf-8")
                 device_class = byte_data[index + 8]
                 battery = byte_data[index + 9] / 100.0
-                status = byte_data[index + 10] == 1
-                is_tracked = byte_data[index + 11] == 1
+                status = (byte_data[index + 10] & (1 << 0)) != 0
+                is_tracked = (byte_data[index + 10] & (1 << 1)) != 0
+                trackingResult = byte_data[index + 11]
 
                 position = [
                     struct.unpack("<f", byte_data[index + 12 : index + 16])[0],
@@ -56,6 +57,7 @@ class ViveDecoder:
                     "battery": battery,
                     "status": status,
                     "is_tracked": is_tracked,
+                    "tracking_result": trackingResult,
                     "position": position,
                     "rotation": rotation,
                 }
