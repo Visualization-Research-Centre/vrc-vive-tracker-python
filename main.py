@@ -87,60 +87,86 @@ class App(tk.Tk):
         self.visualize_blobs_var.set(0)
         
         
+        self.network_visible = True  # Track visibility state
+        
+        
         self.update_state("Idle")
         self.update_augment_slider(None)
         self.update_compute_blobs_slider(None)
         self.handle_visualisation_selection(None)
         self.dropdown_var.set("None")
         
+        
+            # Add this method to your class
+    def toggle_network_settings(self, event=None):
+        """Toggle visibility of network settings"""
+        if self.network_visible:
+            self.input_frame.grid_remove()
+            self.network_toggle.config(text="► Network Settings")
+            self.network_visible = False
+        else:
+            self.input_frame.grid()
+            self.network_toggle.config(text="▼ Network Settings")
+            self.network_visible = True
 
     def init_ui(self):
 
         self.style = ttk.Style()
         self.style.theme_use("clam")  # clam, alt, default, classic
-
-        self.minsize(350, 850)
         self.configure(bg="#dfdfdf")
         self.protocol("WM_DELETE_WINDOW", self.exit_gracefully)
-
-        # Network frame
-        input_frame = ttk.LabelFrame(self, text="Network Settings")
-        input_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
+        
+        # Network container frame
+        network_container = ttk.Frame(self)
+        network_container.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
+        
+        # Toggle button for network settings
+        self.network_toggle = ttk.Label(
+            network_container, 
+            text="▼ Network Settings",
+            cursor="hand2"
+        )
+        self.network_toggle.grid(row=0, column=0,  padx=0, pady=0 , sticky="w")
+        self.network_toggle.bind("<Button-1>", self.toggle_network_settings)
+        
+        # Network frame (initially visible)
+        self.input_frame = ttk.LabelFrame(network_container, text="")
+        self.input_frame.grid(row=1, column=0, padx=0, pady=0, sticky="ew")
 
         # Receiver IP and Port
-        self.receiver_ip_label = ttk.Label(input_frame, text="Receiver IP:")
-        self.receiver_ip_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        self.receiver_ip_label = ttk.Label(self.input_frame, text="Receiver IP:")
+        self.receiver_ip_label.grid(row=0, column=0, padx=5, pady=0, sticky="w")
 
-        self.receiver_ip_entry = ttk.Entry(input_frame)
+        self.receiver_ip_entry = ttk.Entry(self.input_frame)
         self.receiver_ip_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
         self.receiver_ip_entry.insert(0, self.receiver_ip)
 
-        self.receiver_port_label = ttk.Label(input_frame, text="Receiver Port:")
+        self.receiver_port_label = ttk.Label(self.input_frame, text="Receiver Port:")
         self.receiver_port_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
 
-        self.receiver_port_entry = ttk.Entry(input_frame)
+        self.receiver_port_entry = ttk.Entry(self.input_frame)
         self.receiver_port_entry.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
         self.receiver_port_entry.insert(0, self.receiver_port)
 
         # Sender IP and Port
-        self.sender_ip_label = ttk.Label(input_frame, text="Sender IP:")
+        self.sender_ip_label = ttk.Label(self.input_frame, text="Sender IP:")
         self.sender_ip_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
 
-        self.sender_ip_entry = ttk.Entry(input_frame)
+        self.sender_ip_entry = ttk.Entry(self.input_frame)
         self.sender_ip_entry.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
         self.sender_ip_entry.insert(0, self.sender_ip)
 
-        self.sender_port_label = ttk.Label(input_frame, text="Sender Port:")
+        self.sender_port_label = ttk.Label(self.input_frame, text="Sender Port:")
         self.sender_port_label.grid(row=3, column=0, padx=5, pady=5, sticky="w")
 
-        self.sender_port_entry = ttk.Entry(input_frame)
+        self.sender_port_entry = ttk.Entry(self.input_frame)
         self.sender_port_entry.grid(row=3, column=1, padx=5, pady=5, sticky="ew")
         self.sender_port_entry.insert(0, self.sender_port)
 
         # Test Connection
         self.connect_var = tk.IntVar()
         self.connect_checkbox = ttk.Checkbutton(
-            input_frame,
+            self.input_frame,
             text="Test",
             variable=self.connect_var,
             command=self.handle_connect_checkbox,
@@ -149,7 +175,7 @@ class App(tk.Tk):
 
         self.sender_use_list_var = tk.IntVar()
         self.sender_use_list_checkbox = ttk.Checkbutton(
-            input_frame,
+            self.input_frame,
             text="Use Sender list",
             variable=self.sender_use_list_var,
             command=self.handle_sender_use_list,
@@ -420,7 +446,7 @@ class App(tk.Tk):
 
     def close_all_actors(self):
         if self.processor:
-            self.processor.stop()
+            self.processor.close()
         if self.recorder:
             self.recorder.close()
         if self.player:
@@ -639,7 +665,7 @@ class App(tk.Tk):
         if not self.synchronizer.start():
             messagebox.showerror("Error", "Failed to start Synchronizer.")
             return
-
+    
         # start the processor
         self.processor = Processor(
             callback_data=self.synchronizer.get_data_block,
@@ -776,7 +802,10 @@ class App(tk.Tk):
         except Exception as e:
             logging.error(f"Error while closing actors: {e}")
         self.destroy()
-
+        logging.info("Exited gracefully.")
+        self.quit()
+        exit(0)
+        
 
 if __name__ == "__main__":
 
