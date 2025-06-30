@@ -11,7 +11,7 @@ from src.senders import UDPSenderQ
 from src.recorder import Recorder
 from src.processor import Processor
 from src.vive_visualizer import ViveVisualizer
-
+from src.analyser import Analyser
 
 logging.basicConfig(
     level=logging.INFO, format="%(filename)s - %(levelname)s - %(message)s"
@@ -47,6 +47,7 @@ class App(tk.Tk):
         self.processor = None
         self.src = None
         self.synchronizer = None
+        self.analyser = None
 
         if config:
             # Load configuration from file
@@ -194,15 +195,20 @@ class App(tk.Tk):
         self.save_data_label = ttk.Label(button_frame, text="No data loaded.")
         self.save_data_label.grid(row=0, column=1, padx=5, pady=5, sticky="w")
 
-        self.btn_record = ttk.Button(
-            button_frame, text="Record", command=self.handle_recording
-        )
-        self.btn_record.grid(row=1, column=0, padx=5, pady=5, sticky="w")
-
         self.btn_load = ttk.Button(
             button_frame, text="Load Data", command=self.load_data
         )
-        self.btn_load.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        self.btn_load.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+
+        self.btn_record = ttk.Button(
+            button_frame, text="Record", command=self.handle_recording
+        )
+        self.btn_record.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+
+        self.btn_analyze = ttk.Button(
+            button_frame, text="Analyze Data", command=self.analyze_data
+        )
+        self.btn_analyze.grid(row=1, column=1, padx=5, pady=5, sticky="w")
 
         self.load_data_label = ttk.Label(button_frame, text="No data loaded.")
         self.load_data_label.grid(row=2, column=1, padx=5, pady=5, sticky="w")
@@ -411,8 +417,10 @@ class App(tk.Tk):
             self.btn_pause.config(state=tk.DISABLED)
             if is_load_file_path_valid:
                 self.load_data_label.config(text=self.trim_path(self.file_path))
+                self.btn_analyze.config(state=tk.NORMAL)
             else:
                 self.load_data_label.config(text="No data loaded. Using receiver.")
+                self.btn_analyze.config(state=tk.DISABLED)
 
         elif self.state == self.states[1]:  # recording
             self.btn_play.config(state=tk.DISABLED)
@@ -610,6 +618,24 @@ class App(tk.Tk):
                     if self.synchronizer:
                         self.synchronizer.remove_callback("receiver")
                         logging.info("Sync with Receiver disabled.")
+                        
+    def analyze_data(self):
+        if not self.file_path:
+            messagebox.showwarning("Warning", "No data loaded. Please load data first.")
+            return
+
+        # Create an Analyser instance
+        self.analyser = Analyser(
+            input_file=self.file_path, output_dir="output"
+        )
+        
+        # Process the tracking data
+        try:
+            self.analyser.process_tracking_data()
+            self.analyser.visualize_results()
+        except Exception as e:
+            logging.error(f"Error during analysis: {e}")
+            messagebox.showerror("Error", f"Failed to analyze data: {e}")
 
     #### PROCESSING
 
