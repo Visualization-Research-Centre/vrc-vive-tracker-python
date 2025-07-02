@@ -24,5 +24,6 @@
         "circle",
         "line",
         "random"
-    ]
+    ],
+    "compute_blobs": false
 }

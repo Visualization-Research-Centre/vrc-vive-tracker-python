@@ -28,7 +28,6 @@ class Processor:
         self.running = False
         self.data = None
         self.bypass = False
-        self.detect_blobs = True
         self.debug = False
         self.augment_data = True
     
@@ -101,15 +100,16 @@ class Processor:
                 return None
 
             # detect the blobs
-            blobs, tracker_data = self.blobber.process_data(tracker_data)
-            self.encoder.blobs = blobs
-            if self.debug and len(blobs) > 0:
-                dbg_str = "Blobs:\n"
-                for i, blob in enumerate(blobs):
-                    dbg_str += f"\tID {i}:({blob[0]:.2f} "
-                    dbg_str += f",{blob[1]:.2f} "
-                    dbg_str += f",{blob[2]:.2f})\n"
-                logging.info(dbg_str)
+            if self.config["compute_blobs"]:
+                blobs, tracker_data = self.blobber.process_data(tracker_data)
+                self.encoder.blobs = blobs
+                if self.debug and len(blobs) > 0:
+                    dbg_str = "Blobs:\n"
+                    for i, blob in enumerate(blobs):
+                        dbg_str += f"\tID {i}:({blob[0]:.2f} "
+                        dbg_str += f",{blob[1]:.2f} "
+                        dbg_str += f",{blob[2]:.2f})\n"
+                    logging.info(dbg_str)
 
             if self.debug:
                 dbg_str = "Trackers:\n"
