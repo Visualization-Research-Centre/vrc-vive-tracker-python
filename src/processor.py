@@ -30,6 +30,7 @@ class Processor:
         self.bypass = False
         self.debug = False
         self.augment_data = True
+        self.config = config
     
     def set_radius(self, radius):
         self.blobber.radius = radius
@@ -100,6 +101,7 @@ class Processor:
                 return None
 
             # detect the blobs
+            blobs = []
             if self.config["compute_blobs"]:
                 blobs, tracker_data = self.blobber.process_data(tracker_data)
                 self.encoder.blobs = blobs
