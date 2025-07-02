@@ -4,7 +4,7 @@ import threading
 import queue
 
 
-class ViveVisualizer:
+class Visualizer:
     def __init__(self, canvas, root):
         self.canvas = canvas
         self.blobs = []

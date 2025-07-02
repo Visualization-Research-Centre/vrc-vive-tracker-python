@@ -2,7 +2,7 @@ import logging
 import os
 import struct
 
-from src.vive_decoder import ViveDecoder
+from decoder import Decoder
 import csv
 
 
@@ -83,8 +83,8 @@ def main(no_ppl, rec_path, ignore_list):
                 logging.error(f"Recording file not found: {recording_path}")
                 continue
 
-            decoder = ViveDecoder()
-            decoder.set_ignored_vive_tracker_names(ignore_list)
+            decoder = Decoder()
+            decoder.set_ignored_tracker_names(ignore_list)
             
             data = load_from_bin(recording_path)
             
@@ -97,7 +97,7 @@ def main(no_ppl, rec_path, ignore_list):
                 label = train_recordings.index(recording)
                 logging.info(f"Processing recording: {recording}, label: {label}")
                 decoder.decode(d[1])
-                trackers = decoder.vive_trackers
+                trackers = decoder.trackers
                 if trackers is None or len(trackers) == 0:
                     logging.warning("No trackers found in the decoded data.")
                     continue

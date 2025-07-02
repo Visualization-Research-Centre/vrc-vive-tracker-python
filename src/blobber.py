@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class ViveBlobber:
+class Blobber:
     def __init__(self, radius=1):
         self.radius = radius
 
@@ -158,15 +158,15 @@ if __name__ == "__main__":
         (10.1, 11.2),
     ]
 
-    vive_trackers = [
+    trackers = [
         {"name": f"Tracker_{i}", "blob_id": -1, "position": [x, y, 0.0]}
         for i, (x, y) in enumerate(positions)
     ]
 
-    detector = ViveBlobber(radius)
+    detector = Blobber(radius)
 
-    blobs, vr_tracker_data = detector.process_data(vive_trackers)
-    visualize_blobs(vive_trackers, blobs)
+    blobs, vr_tracker_data = detector.process_data(trackers)
+    visualize_blobs(trackers, blobs)
 
     # example 2
     radius = 3
@@ -182,11 +182,11 @@ if __name__ == "__main__":
         (10.3, 11.1),
     ]
 
-    vive_trackers = [
+    trackers = [
         {"name": f"Tracker_{i}", "blob_id": -1, "position": [x, y, 0.0]}
         for i, (x, y) in enumerate(positions)
     ]
 
-    detector = ViveBlobber(radius)
-    blobs, vr_tracker_data = detector.process_data(vive_trackers)
-    visualize_blobs(vive_trackers, blobs)
+    detector = Blobber(radius)
+    blobs, vr_tracker_data = detector.process_data(trackers)
+    visualize_blobs(trackers, blobs)

@@ -6,7 +6,7 @@ import threading
 
 class Recorder:
     """
-    the recorder class is responsible for recording the data from the vive tracker
+    the recorder class is responsible for recording the data from the FCS tracker
     the received data is timestamped and stored in a list
     after recording is done, the data is saved to a file in the specified format
     additionally, the received data can be sent to a remote host (bypass)

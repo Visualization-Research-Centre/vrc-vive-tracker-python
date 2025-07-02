@@ -1,8 +1,8 @@
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from src.vive_decoder import ViveDecoder    
-from src.vive_encoder import ViveEncoder
+from decoder import Decoder    
+from encoder import Encoder
 
 if __name__ == "__main__":
 
@@ -11,7 +11,7 @@ if __name__ == "__main__":
     
     print('\nExample for encoding and decoding raw data:')
 
-    vive_trackers = [
+    trackers = [
         {
             'name': '2B9219E9',
             'device_class': 3,
@@ -42,25 +42,25 @@ if __name__ == "__main__":
     ]
 
     # encode the data
-    encoder = ViveEncoder()
-    encoder.vive_trackers = vive_trackers
+    encoder = Encoder()
+    encoder.trackers = trackers
     encoded_data = encoder.encode()
     
-    assert vive_trackers == encoder.vive_trackers, "Data is not equal to vr_tracker_devices"
+    assert trackers == encoder.trackers, "Data is not equal to vr_tracker_devices"
     print('\nTest 1 passed!')
     print(encoder.blobs)
-    print(encoder.vive_trackers)
+    print(encoder.trackers)
     # decode the data
-    decoder = ViveDecoder()
+    decoder = Decoder()
     decoder.decode(encoded_data)
-    decoded_data = decoder.vive_trackers
+    decoded_data = decoder.trackers
     print('\ndecoded_data:', decoded_data)
 
-    assert vive_trackers == decoded_data, "Data is not equal to decoded_data"
+    assert trackers == decoded_data, "Data is not equal to decoded_data"
     print('\nTest 2 passed!')
 
     # encode the decoded data again and compare with the original encoded data
-    encoder.vive_trackers = decoded_data 
+    encoder.trackers = decoded_data 
     assert encoded_data == encoder.encode()
     print('\nTest 3 passed!')
 
@@ -101,42 +101,42 @@ if __name__ == "__main__":
     ]
 
     # decode the data
-    decoder = ViveDecoder()
+    decoder = Decoder()
     decoder.decode(byte_data)
-    decoded_data = decoder.vive_trackers
+    decoded_data = decoder.trackers
 
     # encode the decoded data 2x
-    encoder.vive_trackers = decoded_data
+    encoder.trackers = decoded_data
     encoded_data = encoder.encode()
 
     # decode again
     decoder.decode(encoded_data)
-    decoded_data = decoder.vive_trackers
+    decoded_data = decoder.trackers
 
-    encoder.vive_trackers = decoded_data
+    encoder.trackers = decoded_data
     encoded_data_2 = encoder.encode()
 
     assert encoded_data == encoded_data_2, "Encoded data is not equal to encoded_data_2"
     print('\nTest 4 passed!')
 
     # =============================================================================
-    # test add ignore vive tracker name
+    # test add ignore FCS tracker name
 
     ignore_device_names = ['2B9219E9', 'FD0C50D1']
 
-    decoder.ignored_vive_tracker_names = ignore_device_names
-    assert ignore_device_names == decoder.ignored_vive_tracker_names, "Ignore device names are not equal to ignored_vive_tracker_names"
+    decoder.ignored_tracker_names = ignore_device_names
+    assert ignore_device_names == decoder.ignored_tracker_names, "Ignore device names are not equal to ignored_tracker_names"
     print('\nTest 5 passed!')
 
     # decode the data again
     decoder.decode(byte_data)
-    assert len(decoder.vive_trackers) == 2, "Number of devices is not equal to 2"
+    assert len(decoder.trackers) == 2, "Number of devices is not equal to 2"
     print('\nTest 6 passed!')
 
     # =============================================================================
     # test the blobs
 
-    vive_trackers_w_blobs = [
+    trackers_w_blobs = [
         {
             'name': '2B9219E9', 
             'device_class': 3, 
@@ -182,43 +182,43 @@ if __name__ == "__main__":
     ]
 
     # encode the blobs
-    encoder = ViveEncoder()
+    encoder = Encoder()
     encoder.blobs = blobs
     encoded_data = encoder.encode()
 
     # decode the blobs
-    decoder = ViveDecoder()
+    decoder = Decoder()
     decoder.decode(encoded_data)
-    decoded_trackers = decoder.vive_trackers
+    decoded_trackers = decoder.trackers
     decoded_blobs = decoder.blobs
 
     print('\ndecoded_blobs:\n', decoded_blobs)
-    assert decoded_trackers == [], "Decoded trackers are not equal to vive_trackers"
+    assert decoded_trackers == [], "Decoded trackers are not equal to trackers"
     assert decoded_blobs == blobs, "Decoded blobs are not equal to blobs"
 
     # add trackers and blobs
-    encoder.vive_trackers = vive_trackers_w_blobs
+    encoder.trackers = trackers_w_blobs
     encoded_data = encoder.encode()
 
-    decoder = ViveDecoder()
+    decoder = Decoder()
     decoder.decode(encoded_data)
-    decoded_trackers = decoder.vive_trackers
+    decoded_trackers = decoder.trackers
     decoded_blobs = decoder.blobs
 
     # encode again
-    encoder.vive_trackers = decoded_trackers
+    encoder.trackers = decoded_trackers
     encoder.blobs = decoded_blobs
     encoded_data = encoder.encode()
 
     # decode again
-    decoder = ViveDecoder()
+    decoder = Decoder()
     decoder.decode(encoded_data)
-    decoded_trackers_2 = decoder.vive_trackers
+    decoded_trackers_2 = decoder.trackers
     decoded_blobs_2 = decoder.blobs
 
     print('\ndecoded_trackers:\n', decoded_trackers)
-    print('\nvive_trackers_w_blobs:\n', decoded_trackers_2)
-    assert decoded_trackers == decoded_blobs_2, "Decoded trackers are not equal to vive_trackers"
+    print('\ntrackers_w_blobs:\n', decoded_trackers_2)
+    assert decoded_trackers == decoded_blobs_2, "Decoded trackers are not equal to trackers"
     print('\nTest 7 passed!')
     assert decoded_blobs == decoded_blobs_2, "Decoded blobs are not equal to blobs"
     print('\nTest 8 passed!')

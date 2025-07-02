@@ -2,7 +2,7 @@ import math
 import copy
 
 
-class ViveAugmentor:
+class Augmentor:
     def __init__(self):
         self.fake_tracker_names = [
             "2B9219F0",
@@ -84,7 +84,7 @@ class ViveAugmentor:
 if __name__ == "__main__":
 
     import matplotlib.pyplot as plt
-    from src.vive_decoder import ViveDecoder
+    from decoder import Decoder
 
     def visualize_devices(decoded_data):
         """
@@ -113,14 +113,14 @@ if __name__ == "__main__":
     byte_data = b"\xae\x08\x072B9219E9\x03d\x01\x01\xeb\x00&?n\x9f{@RQo@\xb91W\xbf\xc9\xc0\x07\xbf\xcdT\xc1=xZj=8992BF03\x03T\x00\x005*M\xc0 B\x05>\n\xbaC\xc0\xc7\x1bq\xbe\xf6Pw\xbf\x1bH\x1d=\xde\x7f\xca=4CDFCB8B\x032\x01\x01=\\\x06\xbf\xc0^\xe1?\x01\xde\xae\xbeu\rD\xbfS\x83\x89=\xe2\xc9\xbf=N\xf4!?3AD07E7B\x04\x00\x01\x01\x99\xd6w@>\xbbl@Dj!\xbf\xe0\xb3{>\xe6\x18%\xbf\x1e\x800>@\xec3?292B164A\x04\x00\x01\x01\xc0\xe4m\xc0X\\s@\xcf\xbe\xc7>\x00)\x80\xbe\x1dH$\xbf\x1d4\x99>l\t)\xbf26D688D6\x04\x00\x01\x01\xefI\xec\xbd\x9c\x02v@\xf4\xe9m@{\xf6\xa3\xbc\xd5\xadq\xbf/m\xa7>9^\x1a\xbd1FA80E86\x04\x00\x01\x01\xd8\xb3R\xbc Gt@\xef\tp\xc0\xe0\xe1\xb7>\xb2\x07-={\t\xee\xbb\x02\xabn?"
 
     # decode data
-    decoder = ViveDecoder()
+    decoder = Decoder()
     decoder.decode(byte_data)
-    decoded_data = decoder.vive_trackers
+    decoded_data = decoder.trackers
     num_devices = len(decoded_data)
     print("num_devices:", num_devices)
 
-    # create an instance of the ViveAugmentor class
-    augmentor = ViveAugmentor()
+    # create an instance of the Augmentor class
+    augmentor = Augmentor()
 
     # =============================================================================
     # test 1, no augmentation

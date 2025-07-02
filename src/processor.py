@@ -1,9 +1,9 @@
 import threading
 import logging
-from src.vive_decoder import ViveDecoder
-from src.vive_encoder import ViveEncoder
-from src.vive_blobber import ViveBlobber
-from src.vive_augmentor import ViveAugmentor
+from src.decoder import Decoder
+from src.encoder import Encoder
+from src.blobber import Blobber
+from src.augmentor import Augmentor
 from src.classifier import Classifier
 
 class Processor:
@@ -19,11 +19,11 @@ class Processor:
         self.callback = callback
         self.callback_vis = callback_vis
         self.num_augmentations = 1
-        self.decoder = ViveDecoder()
-        self.encoder = ViveEncoder()
-        self.blobber = ViveBlobber()
-        self.augmentor = ViveAugmentor()
-        self.classifier = Classifier(config)
+        self.decoder = Decoder()
+        self.encoder = Encoder()
+        self.blobber = Blobber()
+        self.augmentor = Augmentor()
+        self.classifier = None # Classifier(config)
         self.thread = None
         self.running = False
         self.data = None
@@ -41,8 +41,8 @@ class Processor:
     def set_augment_data(self, augment_data):
         self.augment_data = augment_data
         
-    def set_ignore_vive_tracker_names(self, ignored_vive_tracker_names):
-        self.decoder.set_ignored_vive_tracker_names(ignored_vive_tracker_names)
+    def set_ignore_tracker_names(self, ignored_tracker_names):
+        self.decoder.set_ignored_tracker_names(ignored_tracker_names)
 
     def set_debug(self, debug):
         self.debug = debug
@@ -84,7 +84,7 @@ class Processor:
 
             # decode the data (find the trackers)
             self.decoder.decode(data)
-            tracker_data = self.decoder.vive_trackers
+            tracker_data = self.decoder.trackers
             
             if tracker_data is None or len(tracker_data) == 0:
                 logging.warning("No trackers found in the decoded data.")
@@ -127,12 +127,11 @@ class Processor:
                 logging.info(dbg_str)
 
             # encode the data
-            self.encoder.vive_trackers = tracker_data
+            self.encoder.trackers = tracker_data
             data = self.encoder.encode()
             
             # classify the data
             if self.classifier:
-                if False:
                     # preprocess the data
                     trackers = []
                     for tracker in tracker_data:

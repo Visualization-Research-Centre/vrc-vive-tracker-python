@@ -10,7 +10,7 @@ from src.sources import UDPReceiverQ, Player, Synchronizer
 from src.senders import UDPSenderQ
 from src.recorder import Recorder
 from src.processor import Processor
-from src.vive_visualizer import ViveVisualizer
+from src.visualizer import Visualizer
 from src.analyser import Analyser
 
 logging.basicConfig(
@@ -21,7 +21,7 @@ logging.basicConfig(
 class App(tk.Tk):
     def __init__(self, config=None):
         super().__init__()
-        self.title("Vive Tracker Recorder")
+        self.title("FCS Tracker Recorder")
 
         # default network settings
         self.receiver_ip = "127.0.0.1"
@@ -29,7 +29,7 @@ class App(tk.Tk):
         self.sender_ip = "127.0.0.1"
         self.sender_ip_list = ["192.168.50.255"]
         self.sender_port = 2223
-        self.ignore_vive_tracker_names = ["2B9219E9"]
+        self.ignore_tracker_names = ["2B9219E9"]
 
         # app variables
         self.file_path = None
@@ -63,8 +63,8 @@ class App(tk.Tk):
                 )
                 self.sender_ip = self.config_data.get("sender_ip", self.sender_ip)
                 self.sender_port = self.config_data.get("sender_port", self.sender_port)
-                self.ignore_vive_tracker_names = self.config_data.get(
-                    "ignore_vive_tracker_names", self.ignore_vive_tracker_names
+                self.ignore_tracker_names = self.config_data.get(
+                    "ignore_tracker_names", self.ignore_tracker_names
                 )
                 
         
@@ -75,13 +75,13 @@ class App(tk.Tk):
         self.init_ui()
         
         self.player = Player()
-        self.visualizer = ViveVisualizer(self.canvas, self)
+        self.visualizer = Visualizer(self.canvas, self)
         self.visualizer.start()
         
         # set UI
         self.dropdown.current(0)
         self.enable_visualisation_var.set(1)
-        self.ignore_vive_tracker_names_var.set(1)
+        self.ignore_tracker_names_var.set(1)
         self.compute_blobs_slider.set(10)
         self.augment_var.set(0)
         self.sync_with_receiver_var.set(0)
@@ -289,29 +289,29 @@ class App(tk.Tk):
         self.compute_blobs_slider.bind("<Motion>", self.update_compute_blobs_slider)
 
         # OTHER
-        self.ignore_vive_tracker_names_var = tk.IntVar()
-        self.ignore_vive_tracker_names_checkbox = ttk.Checkbutton(
+        self.ignore_tracker_names_var = tk.IntVar()
+        self.ignore_tracker_names_checkbox = ttk.Checkbutton(
             process_frame,
-            text="Ignore Vive Tracker Names",
-            variable=self.ignore_vive_tracker_names_var,
-            command=self.handle_ignore_vive_trackers,
+            text="Ignore FCS Tracker Names",
+            variable=self.ignore_tracker_names_var,
+            command=self.handle_ignore_trackers,
         )
-        self.ignore_vive_tracker_names_checkbox.grid(
+        self.ignore_tracker_names_checkbox.grid(
             row=7, column=0, padx=5, pady=5, sticky="w"
         )
 
-        self.ignore_vive_tracker_names_entry = ttk.Entry(process_frame, width=35)
-        self.ignore_vive_tracker_names_entry.grid(
+        self.ignore_tracker_names_entry = ttk.Entry(process_frame, width=35)
+        self.ignore_tracker_names_entry.grid(
             row=8, column=0, padx=5, pady=5, sticky="ew"
         )
-        self.ignore_vive_tracker_names_entry.insert(
-            0, ", ".join(self.ignore_vive_tracker_names)
+        self.ignore_tracker_names_entry.insert(
+            0, ", ".join(self.ignore_tracker_names)
         )
-        self.ignore_vive_tracker_names_entry.bind(
-            "<Return>", self.update_ignore_vive_tracker_names
+        self.ignore_tracker_names_entry.bind(
+            "<Return>", self.update_ignore_tracker_names
         )
-        self.ignore_vive_tracker_names_entry.bind(
-            "<FocusOut>", self.update_ignore_vive_tracker_names
+        self.ignore_tracker_names_entry.bind(
+            "<FocusOut>", self.update_ignore_tracker_names
         )
 
         self.other_ctrl_frame = ttk.Frame(process_frame)
@@ -447,7 +447,7 @@ class App(tk.Tk):
         self.handle_sender_use_list()
         self.sender_port = int(self.sender_port_entry.get())
         self.bypass_processor = self.bypass_processor_var.get()
-        self.ignore_vive_trackers = self.ignore_vive_tracker_names_var.get()
+        self.ignore_trackers = self.ignore_tracker_names_var.get()
         self.debug = self.debug_var.get()
         if self.receiver_ip == "127.0.0.1":
             self.receiver_ip = ""
@@ -710,10 +710,10 @@ class App(tk.Tk):
             logging.info(
                 f"Processing data with {self.augment_slider_value} augmentations and {self.compute_blobs_slider_value}m radius"
             )
-            if self.ignore_vive_trackers:
-                logging.info("Ignoring certain vive tracker names.")
-                self.processor.set_ignore_vive_tracker_names(
-                    self.ignore_vive_tracker_names
+            if self.ignore_trackers:
+                logging.info("Ignoring certain FCS tracker names.")
+                self.processor.set_ignore_tracker_names(
+                    self.ignore_tracker_names
                 )
             if self.augment_var.get():
                 logging.info("Augmenting data.")
@@ -762,35 +762,35 @@ class App(tk.Tk):
             self.processor.set_radius(self.compute_blobs_slider_value)
             self.visualizer.set_radius(self.compute_blobs_slider_value)
 
-    def handle_ignore_vive_trackers(self):
-        if self.ignore_vive_tracker_names_var.get():
-            logging.info("Ignore Vive Tracker Names enabled.")
+    def handle_ignore_trackers(self):
+        if self.ignore_tracker_names_var.get():
+            logging.info("Ignore FCS Tracker Names enabled.")
             if self.processor:
-                self.processor.set_ignore_vive_tracker_names(
-                    self.ignore_vive_tracker_names
+                self.processor.set_ignore_tracker_names(
+                    self.ignore_tracker_names
                 )
         else:
-            logging.info("Ignore Vive Tracker Names disabled.")
+            logging.info("Ignore FCS Tracker Names disabled.")
             if self.processor:
-                self.processor.set_ignore_vive_tracker_names([])
+                self.processor.set_ignore_tracker_names([])
 
-    def update_ignore_vive_tracker_names(self, event):
-        if self.ignore_vive_tracker_names_entry.get():
-            self.ignore_vive_tracker_names = [
+    def update_ignore_tracker_names(self, event):
+        if self.ignore_tracker_names_entry.get():
+            self.ignore_tracker_names = [
                 name.strip()
-                for name in self.ignore_vive_tracker_names_entry.get().split(",")
+                for name in self.ignore_tracker_names_entry.get().split(",")
             ]
             logging.info(
-                f"Ignoring Vive Tracker Names: {self.ignore_vive_tracker_names}"
+                f"Ignoring FCS Tracker Names: {self.ignore_tracker_names}"
             )
             if self.processor:
-                self.processor.set_ignore_vive_tracker_names(
-                    self.ignore_vive_tracker_names
+                self.processor.set_ignore_tracker_names(
+                    self.ignore_tracker_names
                 )
         else:
-            logging.info("No Vive Tracker Names to ignore.")
+            logging.info("No FCS Tracker Names to ignore.")
             if self.processor:
-                self.processor.set_ignore_vive_tracker_names([])
+                self.processor.set_ignore_tracker_names([])
 
     def handle_debug_checkbox(self):
         if self.debug_var.get():
@@ -837,7 +837,7 @@ if __name__ == "__main__":
 
     import argparse
 
-    parser = argparse.ArgumentParser(description="Vive Tracker Recorder")
+    parser = argparse.ArgumentParser(description="FCS Tracker Recorder")
     parser.add_argument(
         "-c",
         "--config",

@@ -1,9 +1,9 @@
 import struct
 
 
-class ViveEncoder:
+class Encoder:
     def __init__(self):
-        self.vive_trackers = []
+        self.trackers = []
         self.blobs = []
         self.label = 2222
 
@@ -15,10 +15,10 @@ class ViveEncoder:
         byte_data.extend(struct.pack("<H", self.label))
 
         # Add number of devices (1 byte)
-        byte_data.extend(struct.pack("<B", len(self.vive_trackers)))
+        byte_data.extend(struct.pack("<B", len(self.trackers)))
 
         # Add device data
-        for device in self.vive_trackers:
+        for device in self.trackers:
             # Encode name (as bytes, followed by a null terminator for safety)
             byte_data.extend(device["name"].encode("utf-8"))
 

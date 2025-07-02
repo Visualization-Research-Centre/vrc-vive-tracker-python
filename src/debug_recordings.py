@@ -2,7 +2,7 @@ import os
 import struct
 import logging
 
-from vive_decoder import ViveDecoder
+from src.decoder import Decoder
 
 
 class Debugger:
@@ -69,8 +69,8 @@ class Debugger:
                     rec.append((timestamp, data))
             return rec
 
-        decoder = ViveDecoder()
-        decoder.set_ignored_vive_tracker_names(self.ignore_tracker_list)
+        decoder = Decoder()
+        decoder.set_ignored_tracker_names(self.ignore_tracker_list)
 
         data = load_from_bin(self.binary_filepath)
 
@@ -83,7 +83,7 @@ class Debugger:
                 return
             timestamp = d[0]
             decoder.decode(d[1])
-            trackers = decoder.vive_trackers
+            trackers = decoder.trackers
             if trackers is None or len(trackers) == 0:
                 logging.warning(
                     "No trackers found in the decoded data.")

@@ -6,7 +6,7 @@ import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
-from src.vive_decoder import ViveDecoder
+from src.decoder import Decoder
 from src.sources import Player
 
 # Configure logging
@@ -21,7 +21,7 @@ class Analyser:
     def __init__(self, input_file, output_dir):
         self.input_file = input_file
         self.output_dir = output_dir
-        self.decoder = ViveDecoder()
+        self.decoder = Decoder()
         self.player = Player()
         
 
@@ -43,7 +43,7 @@ class Analyser:
         # Process each data chunk
         for timestamp, binary_chunk in records:
             self.decoder.decode(binary_chunk)
-            for tracker in self.decoder.vive_trackers:
+            for tracker in self.decoder.trackers:
                 name = tracker["name"]
                 
                 # Initialize tracker storage
@@ -99,7 +99,7 @@ class Analyser:
             return
             
         plt.figure(figsize=(15, 10))
-        plt.suptitle("Vive Tracker Data Visualization", fontsize=16)
+        plt.suptitle("FCS Tracker Data Visualization", fontsize=16)
 
         # Create subplot grid
         ax1 = plt.subplot(2, 1, 1)  # Trajectory plot
@@ -209,7 +209,7 @@ class Analyser:
             print(f"{device}: {rate:.2%} error rate")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Vive Tracker Analysis & Visualization")
+    parser = argparse.ArgumentParser(description="FCS Tracker Analysis & Visualization")
     parser.add_argument("--input", required=True, help="Input binary file path")
     parser.add_argument("--output", default="analysis_results", help="Output directory")
     parser.add_argument("--ignore", nargs="*", default=[], help="Trackers to exclude")

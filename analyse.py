@@ -2,7 +2,7 @@ import logging
 import os
 import struct
 
-from src.vive_decoder import ViveDecoder
+from decoder import Decoder
 import csv
 
 
@@ -47,8 +47,8 @@ def main(no_ppl, rec_path, ignore_list):
         logging.error(f"Path does not exist: {rec_path}")
         return
     
-    decoder = ViveDecoder()
-    decoder.set_ignored_vive_tracker_names(ignore_list)
+    decoder = Decoder()
+    decoder.set_ignored_tracker_names(ignore_list)
     
     data = load_from_bin(rec_path)
     
@@ -59,7 +59,7 @@ def main(no_ppl, rec_path, ignore_list):
         timestamp = d[0]
         # label is the index of the recording
         decoder.decode(d[1])
-        trackers = decoder.vive_trackers
+        trackers = decoder.trackers
         if trackers is None or len(trackers) == 0:
             logging.warning("No trackers found in the decoded data.")
             continue
@@ -134,7 +134,7 @@ if __name__ == "__main__":
 
     import argparse
 
-    parser = argparse.ArgumentParser(description="Extract CSV from Vive recording.")
+    parser = argparse.ArgumentParser(description="Extract CSV from FCS recording.")
     parser.add_argument(
         "--path",
         type=str,
