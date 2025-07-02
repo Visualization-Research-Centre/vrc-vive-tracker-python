@@ -212,11 +212,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="FCS Tracker Analysis & Visualization")
     parser.add_argument("--input", required=True, help="Input binary file path")
     parser.add_argument("--output", default="analysis_results", help="Output directory")
-    parser.add_argument("--ignore", nargs="*", default=[], help="Trackers to exclude")
-    parser.add_argument("--window", type=int, default=10, help="Time window for analysis (seconds)")
     
     args = parser.parse_args()
     
     analyser = Analyser(args.input, args.output)
     analyser.process_tracking_data()
-    analyser.visualize_results(time_window=args.window)
+    analyser.visualize_results()

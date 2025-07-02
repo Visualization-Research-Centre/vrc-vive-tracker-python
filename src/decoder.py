@@ -29,6 +29,15 @@ class Decoder:
         vr_tracker_devices_count = byte_data[2]
         trackers = []
         index = 3
+        
+        # device classes
+        # 0 - unknown
+        # 1 - unknown
+        # 2 - index controller
+        # 3 - vive tracker pro
+        # 4 - lighthouse
+        # 5 - Antilatency tracker
+        
 
         if vr_tracker_devices_count > 0:
             self.current_timestamp = time.time()
@@ -61,6 +70,8 @@ class Decoder:
                     "position": position,
                     "rotation": rotation,
                 }
+                
+                print(device_class)
 
                 ## TODO device class 2 not tested
                 if device_class == 2:

@@ -626,7 +626,7 @@ class App(tk.Tk):
 
         # Create an Analyser instance
         self.analyser = Analyser(
-            input_file=self.file_path, output_dir="output"
+            input_file=self.file_path, output_dir="analysis"
         )
         
         # Process the tracking data
