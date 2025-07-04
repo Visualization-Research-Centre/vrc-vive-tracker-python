@@ -36,14 +36,9 @@ class Encoder:
             ## from decoder.py
                 # status = (byte_data[index + 10] & (1 << 0)) != 0
                 # is_tracked = (byte_data[index + 10] & (1 << 1)) != 0
-            status_flags = 0
-            if device["status"]:
-                status_flags |= 1 << 0
-            if device["is_tracked"]:
-                status_flags |= 1 << 1
-            byte_data.extend(struct.pack("<B", status_flags))
-            # Encode tracking result (1 byte)
             byte_data.extend(struct.pack("<B", device["tracking_result"]))
+            byte_data.extend(struct.pack("<B", device["is_tracked"]))
+            # Encode tracking result (1 byte)
             
 
             # Encode position (3 floats, 4 bytes each)
