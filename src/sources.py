@@ -177,6 +177,7 @@ class Player(DataSource):
                 data = f.read(length)
             logging.info(f"Recording time: {start_time}")
 
+            counter = 0
             while True:
                 first = f.read(4)
                 if not first:
@@ -189,6 +190,8 @@ class Player(DataSource):
                 length = struct.unpack("I", f.read(4))[0]
                 data = f.read(length)
                 self.data.append((timestamp, data))
+                counter += 1
+            logging.info(f"Loaded {counter} data blocks from file.")
 
     def load_from_text(self, file_path):
         self.data = []
