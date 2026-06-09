@@ -7,8 +7,8 @@ import os
 import struct
 from abc import ABC, abstractmethod
 
-from src.vive_decoder import ViveDecoder
-from src.vive_encoder import ViveEncoder
+from src.decoder import Decoder
+from src.encoder import Encoder
 
 
 class DataSource(ABC):
@@ -262,8 +262,8 @@ class Synchronizer(DataSource):
         self.thread = None
         self.callbacks = callbacks
         self.queue = queue.Queue()
-        self.decoder = ViveDecoder()
-        self.encoder = ViveEncoder()
+        self.decoder = Decoder()
+        self.encoder = Encoder()
 
     def start(self):
         if self.running:
@@ -327,7 +327,7 @@ class Synchronizer(DataSource):
             #     return
             if d is not None:
                 self.decoder.decode(d)
-                tracker_data = self.decoder.vive_trackers
+                tracker_data = self.decoder.trackers
                 # combine all trackers
                 # overwrite trackers with the same name
                 for tracker in tracker_data:
@@ -341,7 +341,7 @@ class Synchronizer(DataSource):
                         all_trackers.append(tracker)
         # Encode the data
         if all_trackers is not None and len(all_trackers) > 0:
-            self.encoder.vive_trackers = all_trackers
+            self.encoder.trackers = all_trackers
             encoded_data = self.encoder.encode()
             self.queue.put(encoded_data)
         

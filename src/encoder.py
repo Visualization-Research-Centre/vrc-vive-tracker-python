@@ -1,9 +1,9 @@
 import struct
 
 
-class ViveEncoder:
+class Encoder:
     def __init__(self):
-        self.vive_trackers = []
+        self.trackers = []
         self.blobs = []
         self.label = 2222
 
@@ -15,10 +15,10 @@ class ViveEncoder:
         byte_data.extend(struct.pack("<H", self.label))
 
         # Add number of devices (1 byte)
-        byte_data.extend(struct.pack("<B", len(self.vive_trackers)))
+        byte_data.extend(struct.pack("<B", len(self.trackers)))
 
         # Add device data
-        for device in self.vive_trackers:
+        for device in self.trackers:
             # Encode name (as bytes, followed by a null terminator for safety)
             byte_data.extend(device["name"].encode("utf-8"))
 
@@ -33,8 +33,13 @@ class ViveEncoder:
                 byte_data.extend(struct.pack("<B", int(device["battery"] * 100)))
 
             # Encode status and tracking flags (1 byte each)
-            byte_data.extend(struct.pack("<B", 1 if device["status"] else 0))
-            byte_data.extend(struct.pack("<B", 1 if device["is_tracked"] else 0))
+            ## from decoder.py
+                # status = (byte_data[index + 10] & (1 << 0)) != 0
+                # is_tracked = (byte_data[index + 10] & (1 << 1)) != 0
+            byte_data.extend(struct.pack("<B", device["tracking_result"]))
+            byte_data.extend(struct.pack("<B", device["is_tracked"]))
+            # Encode tracking result (1 byte)
+            
 
             # Encode position (3 floats, 4 bytes each)
             for pos in device["position"]:

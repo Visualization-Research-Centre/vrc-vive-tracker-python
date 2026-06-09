@@ -2,20 +2,20 @@ import time
 import struct
 
 
-class ViveDecoder:
+class Decoder:
     def __init__(self):
         self.ignore_tracking_reference = True
-        self.vive_trackers = []
-        self.ignored_vive_tracker_names = []
+        self.trackers = []
+        self.ignored_tracker_names = []
         self.blobs = []
         self.label = 2222
         self.current_timestamp = 0
 
-    def set_ignored_vive_tracker_names(self, vive_tracker_names):
-        self.ignored_vive_tracker_names = []
-        for tracker_name in vive_tracker_names:
+    def set_ignored_tracker_names(self, tracker_names):
+        self.ignored_tracker_names = []
+        for tracker_name in tracker_names:
             name = tracker_name.lower()
-            self.ignored_vive_tracker_names.append(name)
+            self.ignored_tracker_names.append(name)
 
     def decode(self, byte_data):
         if len(byte_data) <= 2:
@@ -27,8 +27,16 @@ class ViveDecoder:
 
         # decode the trackers
         vr_tracker_devices_count = byte_data[2]
-        vive_trackers = []
+        trackers = []
         index = 3
+        
+        # device classes
+        # 0 - unknown
+        # 1 - unknown
+        # 2 - index controller
+        # 3 - vive tracker pro / Antilatency tracker
+        # 4 - lighthouse
+        # 5 -  ...
 
         if vr_tracker_devices_count > 0:
             self.current_timestamp = time.time()
@@ -36,7 +44,8 @@ class ViveDecoder:
                 tracker_name = byte_data[index : index + 8].decode("utf-8")
                 device_class = byte_data[index + 8]
                 battery = byte_data[index + 9] / 100.0
-                status = byte_data[index + 10] == 1
+                status = byte_data[index + 10] > 1
+                trackingResult = byte_data[index + 10]
                 is_tracked = byte_data[index + 11] == 1
 
                 position = [
@@ -56,6 +65,7 @@ class ViveDecoder:
                     "battery": battery,
                     "status": status,
                     "is_tracked": is_tracked,
+                    "tracking_result": trackingResult,
                     "position": position,
                     "rotation": rotation,
                 }
@@ -93,25 +103,25 @@ class ViveDecoder:
                 if self.ignore_tracking_reference:
                     if (
                         vr_tracker_device["name"].lower()
-                        in self.ignored_vive_tracker_names
+                        in self.ignored_tracker_names
                         or vr_tracker_device["name"].upper()
-                        in self.ignored_vive_tracker_names
+                        in self.ignored_tracker_names
                         or vr_tracker_device["device_class"] == 4
                     ):
                         can_add_tracker_device = False
 
                 if can_add_tracker_device:
-                    vive_trackers.append(vr_tracker_device)
+                    trackers.append(vr_tracker_device)
 
-        self.vive_trackers = vive_trackers
+        self.trackers = trackers
 
         # ====================================================================================
         # decode the blobs
         if index >= len(byte_data):
-            return self.vive_trackers, None
+            return self.trackers, None
 
         # change battery to blobs_id for each tracker
-        for tracker in self.vive_trackers:
+        for tracker in self.trackers:
             tracker["blob_id"] = int(tracker["battery"] * 100)
 
         blobs_count = byte_data[index]
@@ -131,4 +141,4 @@ class ViveDecoder:
 
         self.blobs = blobs
 
-        return self.vive_trackers, self.blobs
+        return self.trackers, self.blobs

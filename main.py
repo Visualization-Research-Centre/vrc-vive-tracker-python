@@ -10,8 +10,8 @@ from src.sources import UDPReceiverQ, Player, Synchronizer
 from src.senders import UDPSenderQ
 from src.recorder import Recorder
 from src.processor import Processor
-from src.vive_visualizer import ViveVisualizer
-
+from src.visualizer import Visualizer
+from src.analyser import Analyser
 
 logging.basicConfig(
     level=logging.INFO, format="%(filename)s - %(levelname)s - %(message)s"
@@ -21,7 +21,7 @@ logging.basicConfig(
 class App(tk.Tk):
     def __init__(self, config=None):
         super().__init__()
-        self.title("Vive Tracker Recorder")
+        self.title("FCS Tracker Recorder")
 
         # default network settings
         self.receiver_ip = "127.0.0.1"
@@ -29,7 +29,7 @@ class App(tk.Tk):
         self.sender_ip = "127.0.0.1"
         self.sender_ip_list = ["192.168.50.255"]
         self.sender_port = 2223
-        self.ignore_vive_tracker_names = ["2B9219E9"]
+        self.ignore_tracker_names = ["2B9219E9"]
 
         # app variables
         self.file_path = None
@@ -47,6 +47,7 @@ class App(tk.Tk):
         self.processor = None
         self.src = None
         self.synchronizer = None
+        self.analyser = None
 
         if config:
             # Load configuration from file
@@ -62,8 +63,8 @@ class App(tk.Tk):
                 )
                 self.sender_ip = self.config_data.get("sender_ip", self.sender_ip)
                 self.sender_port = self.config_data.get("sender_port", self.sender_port)
-                self.ignore_vive_tracker_names = self.config_data.get(
-                    "ignore_vive_tracker_names", self.ignore_vive_tracker_names
+                self.ignore_tracker_names = self.config_data.get(
+                    "ignore_tracker_names", self.ignore_tracker_names
                 )
                 
         
@@ -74,17 +75,20 @@ class App(tk.Tk):
         self.init_ui()
         
         self.player = Player()
-        self.visualizer = ViveVisualizer(self.canvas, self)
+        self.visualizer = Visualizer(self.canvas, self)
         self.visualizer.start()
         
         # set UI
         self.dropdown.current(0)
         self.enable_visualisation_var.set(1)
-        self.ignore_vive_tracker_names_var.set(1)
+        self.ignore_tracker_names_var.set(1)
         self.compute_blobs_slider.set(10)
         self.augment_var.set(0)
         self.sync_with_receiver_var.set(0)
         self.visualize_blobs_var.set(0)
+        
+        
+        self.network_visible = True  # Track visibility state
         
         
         self.update_state("Idle")
@@ -93,54 +97,77 @@ class App(tk.Tk):
         self.handle_visualisation_selection(None)
         self.dropdown_var.set("None")
         
+        
+            # Add this method to your class
+    def toggle_network_settings(self, event=None):
+        """Toggle visibility of network settings"""
+        if self.network_visible:
+            self.input_frame.grid_remove()
+            self.network_toggle.config(text="► Network Settings")
+            self.network_visible = False
+        else:
+            self.input_frame.grid()
+            self.network_toggle.config(text="▼ Network Settings")
+            self.network_visible = True
 
     def init_ui(self):
 
         self.style = ttk.Style()
         self.style.theme_use("clam")  # clam, alt, default, classic
-
-        self.minsize(350, 850)
         self.configure(bg="#dfdfdf")
         self.protocol("WM_DELETE_WINDOW", self.exit_gracefully)
-
-        # Network frame
-        input_frame = ttk.LabelFrame(self, text="Network Settings")
-        input_frame.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
+        
+        # Network container frame
+        network_container = ttk.Frame(self)
+        network_container.grid(row=0, column=0, padx=10, pady=5, sticky="ew")
+        
+        # Toggle button for network settings
+        self.network_toggle = ttk.Label(
+            network_container, 
+            text="▼ Network Settings",
+            cursor="hand2"
+        )
+        self.network_toggle.grid(row=0, column=0,  padx=0, pady=0 , sticky="w")
+        self.network_toggle.bind("<Button-1>", self.toggle_network_settings)
+        
+        # Network frame (initially visible)
+        self.input_frame = ttk.LabelFrame(network_container, text="")
+        self.input_frame.grid(row=1, column=0, padx=0, pady=0, sticky="ew")
 
         # Receiver IP and Port
-        self.receiver_ip_label = ttk.Label(input_frame, text="Receiver IP:")
-        self.receiver_ip_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        self.receiver_ip_label = ttk.Label(self.input_frame, text="Receiver IP:")
+        self.receiver_ip_label.grid(row=0, column=0, padx=5, pady=0, sticky="w")
 
-        self.receiver_ip_entry = ttk.Entry(input_frame)
+        self.receiver_ip_entry = ttk.Entry(self.input_frame)
         self.receiver_ip_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
         self.receiver_ip_entry.insert(0, self.receiver_ip)
 
-        self.receiver_port_label = ttk.Label(input_frame, text="Receiver Port:")
+        self.receiver_port_label = ttk.Label(self.input_frame, text="Receiver Port:")
         self.receiver_port_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
 
-        self.receiver_port_entry = ttk.Entry(input_frame)
+        self.receiver_port_entry = ttk.Entry(self.input_frame)
         self.receiver_port_entry.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
         self.receiver_port_entry.insert(0, self.receiver_port)
 
         # Sender IP and Port
-        self.sender_ip_label = ttk.Label(input_frame, text="Sender IP:")
+        self.sender_ip_label = ttk.Label(self.input_frame, text="Sender IP:")
         self.sender_ip_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
 
-        self.sender_ip_entry = ttk.Entry(input_frame)
+        self.sender_ip_entry = ttk.Entry(self.input_frame)
         self.sender_ip_entry.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
         self.sender_ip_entry.insert(0, self.sender_ip)
 
-        self.sender_port_label = ttk.Label(input_frame, text="Sender Port:")
+        self.sender_port_label = ttk.Label(self.input_frame, text="Sender Port:")
         self.sender_port_label.grid(row=3, column=0, padx=5, pady=5, sticky="w")
 
-        self.sender_port_entry = ttk.Entry(input_frame)
+        self.sender_port_entry = ttk.Entry(self.input_frame)
         self.sender_port_entry.grid(row=3, column=1, padx=5, pady=5, sticky="ew")
         self.sender_port_entry.insert(0, self.sender_port)
 
         # Test Connection
         self.connect_var = tk.IntVar()
         self.connect_checkbox = ttk.Checkbutton(
-            input_frame,
+            self.input_frame,
             text="Test",
             variable=self.connect_var,
             command=self.handle_connect_checkbox,
@@ -149,7 +176,7 @@ class App(tk.Tk):
 
         self.sender_use_list_var = tk.IntVar()
         self.sender_use_list_checkbox = ttk.Checkbutton(
-            input_frame,
+            self.input_frame,
             text="Use Sender list",
             variable=self.sender_use_list_var,
             command=self.handle_sender_use_list,
@@ -168,15 +195,20 @@ class App(tk.Tk):
         self.save_data_label = ttk.Label(button_frame, text="No data loaded.")
         self.save_data_label.grid(row=0, column=1, padx=5, pady=5, sticky="w")
 
-        self.btn_record = ttk.Button(
-            button_frame, text="Record", command=self.handle_recording
-        )
-        self.btn_record.grid(row=1, column=0, padx=5, pady=5, sticky="w")
-
         self.btn_load = ttk.Button(
             button_frame, text="Load Data", command=self.load_data
         )
-        self.btn_load.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        self.btn_load.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+
+        self.btn_record = ttk.Button(
+            button_frame, text="Record", command=self.handle_recording
+        )
+        self.btn_record.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+
+        self.btn_analyze = ttk.Button(
+            button_frame, text="Analyze Data", command=self.analyze_data
+        )
+        self.btn_analyze.grid(row=1, column=1, padx=5, pady=5, sticky="w")
 
         self.load_data_label = ttk.Label(button_frame, text="No data loaded.")
         self.load_data_label.grid(row=2, column=1, padx=5, pady=5, sticky="w")
@@ -197,7 +229,7 @@ class App(tk.Tk):
         self.sync_with_receiver_var = tk.IntVar()
         self.sync_with_receiver_checkbox = ttk.Checkbutton(
             play_frame,
-            text="Sync with Receiver",
+            text="Sync",
             variable=self.sync_with_receiver_var,
             command=self.handle_sync_with_receiver_checkbox,
         )
@@ -240,16 +272,16 @@ class App(tk.Tk):
 
         # BLOBS
         self.compute_blobs_label = ttk.Label(slider_frame, text="Blobs")
-        self.compute_blobs_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+        self.compute_blobs_label.grid(row=0, column=2, padx=5, pady=5, sticky="w")
 
         self.compute_blobs_slider = ttk.Scale(
             slider_frame, from_=1, to=40, orient=tk.HORIZONTAL
         )
-        self.compute_blobs_slider.grid(row=3, column=0, padx=5, pady=5, sticky="w")
+        self.compute_blobs_slider.grid(row=1, column=2, padx=5, pady=5, sticky="w")
 
         self.compute_blobs_slider_label = ttk.Label(slider_frame)
         self.compute_blobs_slider_label.grid(
-            row=3, column=1, padx=5, pady=5, sticky="w"
+            row=1, column=3, padx=5, pady=5, sticky="w"
         )
         self.compute_blobs_slider.bind(
             "<ButtonRelease-1>", self.update_compute_blobs_slider
@@ -257,47 +289,49 @@ class App(tk.Tk):
         self.compute_blobs_slider.bind("<Motion>", self.update_compute_blobs_slider)
 
         # OTHER
-        self.ignore_vive_tracker_names_var = tk.IntVar()
-        self.ignore_vive_tracker_names_checkbox = ttk.Checkbutton(
+        self.ignore_tracker_names_var = tk.IntVar()
+        self.ignore_tracker_names_checkbox = ttk.Checkbutton(
             process_frame,
-            text="Ignore Vive Tracker Names",
-            variable=self.ignore_vive_tracker_names_var,
-            command=self.handle_ignore_vive_trackers,
+            text="Ignore FCS Tracker Names",
+            variable=self.ignore_tracker_names_var,
+            command=self.handle_ignore_trackers,
         )
-        self.ignore_vive_tracker_names_checkbox.grid(
+        self.ignore_tracker_names_checkbox.grid(
             row=7, column=0, padx=5, pady=5, sticky="w"
         )
 
-        self.ignore_vive_tracker_names_entry = ttk.Entry(process_frame, width=34)
-        self.ignore_vive_tracker_names_entry.grid(
+        self.ignore_tracker_names_entry = ttk.Entry(process_frame, width=35)
+        self.ignore_tracker_names_entry.grid(
             row=8, column=0, padx=5, pady=5, sticky="ew"
         )
-        self.ignore_vive_tracker_names_entry.insert(
-            0, ", ".join(self.ignore_vive_tracker_names)
+        self.ignore_tracker_names_entry.insert(
+            0, ", ".join(self.ignore_tracker_names)
         )
-        self.ignore_vive_tracker_names_entry.bind(
-            "<Return>", self.update_ignore_vive_tracker_names
+        self.ignore_tracker_names_entry.bind(
+            "<Return>", self.update_ignore_tracker_names
         )
-        self.ignore_vive_tracker_names_entry.bind(
-            "<FocusOut>", self.update_ignore_vive_tracker_names
+        self.ignore_tracker_names_entry.bind(
+            "<FocusOut>", self.update_ignore_tracker_names
         )
 
+        self.other_ctrl_frame = ttk.Frame(process_frame)
+        self.other_ctrl_frame.grid(row=9, column=0, padx=0, pady=0, sticky="ew")
         self.debug_var = tk.IntVar()
         self.debug_checkbox = ttk.Checkbutton(
-            process_frame,
+            self.other_ctrl_frame,
             text="Debug Mode",
             variable=self.debug_var,
             command=self.handle_debug_checkbox,
         )
-        self.debug_checkbox.grid(row=9, column=0, padx=5, pady=5, sticky="w")
+        self.debug_checkbox.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
         self.bypass_processor_var = tk.IntVar()
         self.bypass_processor_checkbox = ttk.Checkbutton(
-            process_frame, text="Bypass", variable=self.bypass_processor_var,
+            self.other_ctrl_frame, text="Bypass", variable=self.bypass_processor_var,
             command= lambda: ( self.processor.set_bypass(self.bypass_processor_var.get()) if self.processor else None ) 
         )
         self.bypass_processor_checkbox.grid(
-            row=10, column=0, padx=5, pady=5, sticky="w"
+            row=0, column=1, padx=5, pady=5, sticky="w"
         )
 
         # Visualisation
@@ -320,7 +354,7 @@ class App(tk.Tk):
 
         # dropdown
         self.dropdown_label = ttk.Label(
-            self.visualisation_ctrl_frame, text="Select Visualisation:"
+            self.visualisation_ctrl_frame, text="Visualisation:"
         )
         self.dropdown_label.grid(row=0, column=1, padx=5, pady=5, sticky="w")
         self.dropdown_var = tk.StringVar()
@@ -328,7 +362,7 @@ class App(tk.Tk):
             self.visualisation_ctrl_frame,
             textvariable=self.dropdown_var,
             values=["None", "all_in_radius", "unique", "unique_w_tracing", "nearest"],
-            state="readonly",
+            state="readonly", width=12,
         )
         self.dropdown.grid(row=0, column=2, padx=5, pady=5, sticky="w")
         self.dropdown.bind("<<ComboboxSelected>>", self.handle_visualisation_selection)
@@ -346,9 +380,9 @@ class App(tk.Tk):
         self.visualize_blobs_checkbox.grid(row=2, column=0, padx=5, pady=5, sticky="w")
 
         self.canvas = tk.Canvas(
-            self.visualisation_frame, width=400, height=400, bg="white"
+            self.visualisation_frame, width=250, height=250, bg="white"
         )
-        self.canvas.grid(row=1, column=0, padx=5, pady=5, sticky="nsew")
+        self.canvas.grid(row=1, column=0, padx=5, pady=5, sticky="w")
 
         # fill the empty space
         self.columnconfigure(0, weight=1)
@@ -383,8 +417,10 @@ class App(tk.Tk):
             self.btn_pause.config(state=tk.DISABLED)
             if is_load_file_path_valid:
                 self.load_data_label.config(text=self.trim_path(self.file_path))
+                self.btn_analyze.config(state=tk.NORMAL)
             else:
                 self.load_data_label.config(text="No data loaded. Using receiver.")
+                self.btn_analyze.config(state=tk.DISABLED)
 
         elif self.state == self.states[1]:  # recording
             self.btn_play.config(state=tk.DISABLED)
@@ -411,14 +447,14 @@ class App(tk.Tk):
         self.handle_sender_use_list()
         self.sender_port = int(self.sender_port_entry.get())
         self.bypass_processor = self.bypass_processor_var.get()
-        self.ignore_vive_trackers = self.ignore_vive_tracker_names_var.get()
+        self.ignore_trackers = self.ignore_tracker_names_var.get()
         self.debug = self.debug_var.get()
         if self.receiver_ip == "127.0.0.1":
             self.receiver_ip = ""
 
     def close_all_actors(self):
         if self.processor:
-            self.processor.stop()
+            self.processor.close()
         if self.recorder:
             self.recorder.close()
         if self.player:
@@ -582,6 +618,24 @@ class App(tk.Tk):
                     if self.synchronizer:
                         self.synchronizer.remove_callback("receiver")
                         logging.info("Sync with Receiver disabled.")
+                        
+    def analyze_data(self):
+        if not self.file_path:
+            messagebox.showwarning("Warning", "No data loaded. Please load data first.")
+            return
+
+        # Create an Analyser instance
+        self.analyser = Analyser(
+            input_file=self.file_path, output_dir="analysis"
+        )
+        
+        # Process the tracking data
+        try:
+            self.analyser.process_tracking_data()
+            self.analyser.visualize_results()
+        except Exception as e:
+            logging.error(f"Error during analysis: {e}")
+            messagebox.showerror("Error", f"Failed to analyze data: {e}")
 
     #### PROCESSING
 
@@ -637,7 +691,7 @@ class App(tk.Tk):
         if not self.synchronizer.start():
             messagebox.showerror("Error", "Failed to start Synchronizer.")
             return
-
+    
         # start the processor
         self.processor = Processor(
             callback_data=self.synchronizer.get_data_block,
@@ -656,10 +710,10 @@ class App(tk.Tk):
             logging.info(
                 f"Processing data with {self.augment_slider_value} augmentations and {self.compute_blobs_slider_value}m radius"
             )
-            if self.ignore_vive_trackers:
-                logging.info("Ignoring certain vive tracker names.")
-                self.processor.set_ignore_vive_tracker_names(
-                    self.ignore_vive_tracker_names
+            if self.ignore_trackers:
+                logging.info("Ignoring certain FCS tracker names.")
+                self.processor.set_ignore_tracker_names(
+                    self.ignore_tracker_names
                 )
             if self.augment_var.get():
                 logging.info("Augmenting data.")
@@ -708,35 +762,35 @@ class App(tk.Tk):
             self.processor.set_radius(self.compute_blobs_slider_value)
             self.visualizer.set_radius(self.compute_blobs_slider_value)
 
-    def handle_ignore_vive_trackers(self):
-        if self.ignore_vive_tracker_names_var.get():
-            logging.info("Ignore Vive Tracker Names enabled.")
+    def handle_ignore_trackers(self):
+        if self.ignore_tracker_names_var.get():
+            logging.info("Ignore FCS Tracker Names enabled.")
             if self.processor:
-                self.processor.set_ignore_vive_tracker_names(
-                    self.ignore_vive_tracker_names
+                self.processor.set_ignore_tracker_names(
+                    self.ignore_tracker_names
                 )
         else:
-            logging.info("Ignore Vive Tracker Names disabled.")
+            logging.info("Ignore FCS Tracker Names disabled.")
             if self.processor:
-                self.processor.set_ignore_vive_tracker_names([])
+                self.processor.set_ignore_tracker_names([])
 
-    def update_ignore_vive_tracker_names(self, event):
-        if self.ignore_vive_tracker_names_entry.get():
-            self.ignore_vive_tracker_names = [
+    def update_ignore_tracker_names(self, event):
+        if self.ignore_tracker_names_entry.get():
+            self.ignore_tracker_names = [
                 name.strip()
-                for name in self.ignore_vive_tracker_names_entry.get().split(",")
+                for name in self.ignore_tracker_names_entry.get().split(",")
             ]
             logging.info(
-                f"Ignoring Vive Tracker Names: {self.ignore_vive_tracker_names}"
+                f"Ignoring FCS Tracker Names: {self.ignore_tracker_names}"
             )
             if self.processor:
-                self.processor.set_ignore_vive_tracker_names(
-                    self.ignore_vive_tracker_names
+                self.processor.set_ignore_tracker_names(
+                    self.ignore_tracker_names
                 )
         else:
-            logging.info("No Vive Tracker Names to ignore.")
+            logging.info("No FCS Tracker Names to ignore.")
             if self.processor:
-                self.processor.set_ignore_vive_tracker_names([])
+                self.processor.set_ignore_tracker_names([])
 
     def handle_debug_checkbox(self):
         if self.debug_var.get():
@@ -774,13 +828,16 @@ class App(tk.Tk):
         except Exception as e:
             logging.error(f"Error while closing actors: {e}")
         self.destroy()
-
+        logging.info("Exited gracefully.")
+        self.quit()
+        exit(0)
+        
 
 if __name__ == "__main__":
 
     import argparse
 
-    parser = argparse.ArgumentParser(description="Vive Tracker Recorder")
+    parser = argparse.ArgumentParser(description="FCS Tracker Recorder")
     parser.add_argument(
         "-c",
         "--config",

@@ -1,9 +1,9 @@
 import threading
 import logging
-from src.vive_decoder import ViveDecoder
-from src.vive_encoder import ViveEncoder
-from src.vive_blobber import ViveBlobber
-from src.vive_augmentor import ViveAugmentor
+from src.decoder import Decoder
+from src.encoder import Encoder
+from src.blobber import Blobber
+from src.augmentor import Augmentor
 from src.classifier import Classifier
 
 class Processor:
@@ -19,18 +19,18 @@ class Processor:
         self.callback = callback
         self.callback_vis = callback_vis
         self.num_augmentations = 1
-        self.decoder = ViveDecoder()
-        self.encoder = ViveEncoder()
-        self.blobber = ViveBlobber()
-        self.augmentor = ViveAugmentor()
-        self.classifier = Classifier(config)
+        self.decoder = Decoder()
+        self.encoder = Encoder()
+        self.blobber = Blobber()
+        self.augmentor = Augmentor()
+        self.classifier = None # Classifier(config)
         self.thread = None
         self.running = False
         self.data = None
         self.bypass = False
-        self.detect_blobs = True
         self.debug = False
         self.augment_data = True
+        self.config = config
     
     def set_radius(self, radius):
         self.blobber.radius = radius
@@ -41,8 +41,8 @@ class Processor:
     def set_augment_data(self, augment_data):
         self.augment_data = augment_data
         
-    def set_ignore_vive_tracker_names(self, ignored_vive_tracker_names):
-        self.decoder.set_ignored_vive_tracker_names(ignored_vive_tracker_names)
+    def set_ignore_tracker_names(self, ignored_tracker_names):
+        self.decoder.set_ignored_tracker_names(ignored_tracker_names)
 
     def set_debug(self, debug):
         self.debug = debug
@@ -62,8 +62,6 @@ class Processor:
 
     def stop(self):
         self.running = False
-        # if self.thread:
-        #     self.thread.join()
         logging.info("Processor stopped.")
 
     def close(self):
@@ -86,7 +84,7 @@ class Processor:
 
             # decode the data (find the trackers)
             self.decoder.decode(data)
-            tracker_data = self.decoder.vive_trackers
+            tracker_data = self.decoder.trackers
             
             if tracker_data is None or len(tracker_data) == 0:
                 logging.warning("No trackers found in the decoded data.")
@@ -103,15 +101,17 @@ class Processor:
                 return None
 
             # detect the blobs
-            blobs, tracker_data = self.blobber.process_data(tracker_data)
-            self.encoder.blobs = blobs
-            if self.debug and len(blobs) > 0:
-                dbg_str = "Blobs:\n"
-                for i, blob in enumerate(blobs):
-                    dbg_str += f"\tID {i}:({blob[0]:.2f} "
-                    dbg_str += f",{blob[1]:.2f} "
-                    dbg_str += f",{blob[2]:.2f})\n"
-                logging.info(dbg_str)
+            blobs = []
+            if self.config["compute_blobs"]:
+                blobs, tracker_data = self.blobber.process_data(tracker_data)
+                self.encoder.blobs = blobs
+                if self.debug and len(blobs) > 0:
+                    dbg_str = "Blobs:\n"
+                    for i, blob in enumerate(blobs):
+                        dbg_str += f"\tID {i}:({blob[0]:.2f} "
+                        dbg_str += f",{blob[1]:.2f} "
+                        dbg_str += f",{blob[2]:.2f})\n"
+                    logging.info(dbg_str)
 
             if self.debug:
                 dbg_str = "Trackers:\n"
@@ -129,20 +129,20 @@ class Processor:
                 logging.info(dbg_str)
 
             # encode the data
-            self.encoder.vive_trackers = tracker_data
+            self.encoder.trackers = tracker_data
             data = self.encoder.encode()
             
             # classify the data
             if self.classifier:
-                # preprocess the data
-                trackers = []
-                for tracker in tracker_data:
-                    if tracker["is_tracked"]:
-                        x = tracker["position"][0]
-                        y = tracker["position"][2]
-                        trackers.extend([x,y])
-                probs, label = self.classifier.predict(trackers)
-                logging.info(f"Class: {label} ({probs})")
+                    # preprocess the data
+                    trackers = []
+                    for tracker in tracker_data:
+                        if tracker["is_tracked"]:
+                            x = tracker["position"][0]
+                            y = tracker["position"][2]
+                            trackers.extend([x,y])
+                    probs, label = self.classifier.predict(trackers)
+                    logging.info(f"Class: {label} ({probs})")
 
             if self.callback_vis:
                 self.callback_vis(blobs, tracker_data)
